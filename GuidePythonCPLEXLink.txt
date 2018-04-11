@@ -1,0 +1,9 @@
+https://www.ibm.com/support/knowledgecenter/SSSA5P_12.7.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/set_up/Python_setup.html
+
+Example call:
+python learn_reg_tree.py -f winequality-red.csv -d 3 -s 0 -y 1 -u 1 -t 1800 -p 200 -v 5 -c 1
+
+that is: depth of tree 3, no starting solution, yes symmetry breaking, yes double all features, time-out and solution polishing time 1800 and 200 seconds respectively, variant 5 (see top of python file), continuous node constant (instead of integer).
+
+the boolean parameters you can set to either 0 or 1. -v 1 is the variant used in the submission.
+

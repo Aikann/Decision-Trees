@@ -1,0 +1,112 @@
+Microsoft Windows [Version 10.0.16299.64]
+(c) 2017 Microsoft Corporation. All rights reserved.
+
+C:\Users\mfirat>cd C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python learn_reg_tree.py -f winequality-red.csv -d 3 -s 0 -y 1 -u 1 -t 1800 -p 200 -v 5 -c 1
+Traceback (most recent call last):
+  File "learn_reg_tree.py", line 17, in <module>
+    import regtrees as tr
+ImportError: No module named regtrees
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python learn_reg_tree.py -f winequality-red.csv -d 3 -s 0 -y 1 -u 1 -t 1800 -p 200 -v 5 -c 1
+Traceback (most recent call last):
+  File "learn_reg_tree.py", line 17, in <module>
+    import regtrees as tr
+  File "C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode\regtrees.py", line 2, in <module>
+    import pandas as pd
+ImportError: No module named pandas
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python -m pip install -U pip setuptools
+Requirement already up-to-date: pip in c:\python27\lib\site-packages
+Collecting setuptools
+  Downloading setuptools-37.0.0-py2.py3-none-any.whl (481kB)
+    100% |################################| 491kB 806kB/s
+Installing collected packages: setuptools
+  Found existing installation: setuptools 28.8.0
+    Uninstalling setuptools-28.8.0:
+      Successfully uninstalled setuptools-28.8.0
+Successfully installed setuptools-37.0.0
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>pip install pandas-0.21.0-cp27-cp27m-win_amd64.whl
+'pip' is not recognized as an internal or external command,
+operable program or batch file.
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python -m pip install pandas-0.21.0-cp27-cp27m-win_amd64.whl
+Processing c:\users\mfirat\desktop\is_group\research\decisiontreemilp\yingqiansicco_decisionandregressiontreelearningcode\pandas-0.21.0-cp27-cp27m-win_amd64.whl
+Collecting pytz>=2011k (from pandas==0.21.0)
+  Downloading pytz-2017.3-py2.py3-none-any.whl (511kB)
+    100% |################################| 512kB 511kB/s
+Collecting numpy>=1.9.0 (from pandas==0.21.0)
+  Downloading numpy-1.13.3-cp27-none-win_amd64.whl (13.0MB)
+    100% |################################| 13.0MB 49kB/s
+Collecting python-dateutil (from pandas==0.21.0)
+  Downloading python_dateutil-2.6.1-py2.py3-none-any.whl (194kB)
+    100% |################################| 194kB 1.2MB/s
+Collecting six>=1.5 (from python-dateutil->pandas==0.21.0)
+  Downloading six-1.11.0-py2.py3-none-any.whl
+Installing collected packages: pytz, numpy, six, python-dateutil, pandas
+Successfully installed numpy-1.13.3 pandas-0.21.0 python-dateutil-2.6.1 pytz-2017.3 six-1.11.0
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python learn_reg_tree.py -f winequality-red.csv -d 3 -s 0 -y 1 -u 1 -t 1800 -p 200 -v 5 -c 1
+Traceback (most recent call last):
+  File "learn_reg_tree.py", line 17, in <module>
+    import regtrees as tr
+  File "C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode\regtrees.py", line 4, in <module>
+    import matplotlib.pyplot as plt
+ImportError: No module named matplotlib.pyplot
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python -m pip install matplotlib
+Collecting matplotlib
+  Downloading matplotlib-2.1.0-cp27-cp27m-win_amd64.whl (8.4MB)
+    100% |################################| 8.4MB 73kB/s
+Collecting backports.functools-lru-cache (from matplotlib)
+  Downloading backports.functools_lru_cache-1.4-py2.py3-none-any.whl
+Requirement already satisfied: six>=1.10 in c:\python27\lib\site-packages (from matplotlib)
+Requirement already satisfied: pytz in c:\python27\lib\site-packages (from matplotlib)
+Collecting cycler>=0.10 (from matplotlib)
+  Downloading cycler-0.10.0-py2.py3-none-any.whl
+Requirement already satisfied: python-dateutil>=2.0 in c:\python27\lib\site-packages (from matplotlib)
+Collecting pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 (from matplotlib)
+  Downloading pyparsing-2.2.0-py2.py3-none-any.whl (56kB)
+    100% |################################| 61kB 1.2MB/s
+Requirement already satisfied: numpy>=1.7.1 in c:\python27\lib\site-packages (from matplotlib)
+Installing collected packages: backports.functools-lru-cache, cycler, pyparsing, matplotlib
+Successfully installed backports.functools-lru-cache-1.4 cycler-0.10.0 matplotlib-2.1.0 pyparsing-2.2.0
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python learn_reg_tree.py -f winequality-red.csv -d 3 -s 0 -y 1 -u 1 -t 1800 -p 200 -v 5 -c 1
+Traceback (most recent call last):
+  File "learn_reg_tree.py", line 17, in <module>
+    import regtrees as tr
+  File "C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode\regtrees.py", line 5, in <module>
+    from scipy import stats
+ImportError: No module named scipy
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python -m pip install scipy
+Collecting scipy
+  Downloading scipy-1.0.0-cp27-none-win_amd64.whl (31.2MB)
+    100% |################################| 31.2MB 21kB/s
+Requirement already satisfied: numpy>=1.8.2 in c:\python27\lib\site-packages (from scipy)
+Installing collected packages: scipy
+Successfully installed scipy-1.0.0
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python learn_reg_tree.py -f winequality-red.csv -d 3 -s 0 -y 1 -u 1 -t 1800 -p 200 -v 5 -c 1
+Traceback (most recent call last):
+  File "learn_reg_tree.py", line 17, in <module>
+    import regtrees as tr
+  File "C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode\regtrees.py", line 6, in <module>
+    from sklearn import tree, ensemble, linear_model, svm, cross_validation
+ImportError: No module named sklearn
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>python -m pip install sklearn
+Collecting sklearn
+  Downloading sklearn-0.0.tar.gz
+Collecting scikit-learn (from sklearn)
+  Downloading scikit_learn-0.19.1-cp27-cp27m-win_amd64.whl (4.5MB)
+    100% |################################| 4.5MB 132kB/s
+Installing collected packages: scikit-learn, sklearn
+  Running setup.py install for sklearn ... done
+Successfully installed scikit-learn-0.19.1 sklearn-0.0
+
+C:\Users\mfirat\Desktop\IS_Group\research\decisiontreeMILP\YingqianSicco_DecisionAndRegressionTreeLearningCode>
