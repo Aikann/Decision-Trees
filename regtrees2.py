@@ -187,4 +187,6 @@ def learnTrees_and_return_segments(depth):
         
         segments_set[index].append(i)
         
+    segments_set=[copy.copy(segments_set) for i in uni]
+        
     return targets, segments_set, mean_absolute_error(y_train,prediction)*len(X_train)
