@@ -31,7 +31,7 @@ def get_start_solutions(depth):
 
     global inputsym
 
-
+#hello
 
     col_var_names = []
 
