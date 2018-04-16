@@ -185,6 +185,7 @@ class BaP_Node:
         self.branched_leaves = branched_leaves #list of corresponding leaves
         
     def solve_relaxation(self): #do CG until the master problem is solved
+        # this function finds a lower bound value at the node
         
         self.prob.solve()
         
