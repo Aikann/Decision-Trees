@@ -95,9 +95,9 @@ def adapt_segments_set(segments_set,row,leaf,branching): #this function adapts t
     
     return new_segments_set
 
-def solve_pricing_given_leaf(prob,leaf,branched_rows,branched_leaves,ID,existing_segments): #return a tuple (segments, obj_value). segments is actually a list of segments.
+def solve_pricing_given_leaf(prob,leaf,branched_rows,branched_leaves,ID,existing_segments,add_rows_excl=[]): #return a tuple (segments, obj_value).
     
-    rows_to_be_excluded, rows_to_be_included = [], []
+    rows_to_be_excluded, rows_to_be_included = add_rows_excl, []
     
     for l in range(len(branched_leaves)):
         
@@ -125,12 +125,10 @@ def solve_pricing_given_leaf(prob,leaf,branched_rows,branched_leaves,ID,existing
         
     return segment, obj_value
 
-def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID): #return a tuple (segments_to_be_added, convergence)
+def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID,pricing_method): #return a tuple (segments_to_be_added, convergence)
     
     num_leafs = len(segments_set)
-    
-    pricing_method=1
-    
+        
     segments_to_be_added, obj_values = [], []
     
     if pricing_method==1:
@@ -146,10 +144,34 @@ def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID): #return a
             print("Reduced cost ",str(value))
             
     elif pricing_method==2:
+                
+        excl_rows=[]
         
-        s=0
-        
-    return segments_to_be_added, (min(obj_values) > -0.01)
+        for l in range(num_leafs):
+            
+            if l!=num_leafs-1:
+                
+                segment, value = solve_pricing_given_leaf(prob,l,branched_rows,branched_leaves,ID,segments_set[l],excl_rows)
+            
+                segments_to_be_added.append(segment)
+                
+                excl_rows.extend(segment)
+                
+                obj_values.append(value)
+                
+                print(segment)
+                            
+                print("Reduced cost ",str(value))
+                
+            else:
+                
+                segment = [i for i in range(get_data_size()) if i not in excl_rows]
+                
+                segments_to_be_added.append(segment)
+                
+                print(segment)
+                                
+    return segments_to_be_added, ((min(obj_values) - int(pricing_method==2)) > -0.01)
 
 class BaP_Node:
     
@@ -199,13 +221,17 @@ class BaP_Node:
             
             a=time.time()
             
-            segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID)
+            print("Lauched : ",2-int(count%50==0))
+            
+            segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,2-int(count%50==0))
                                 
+            self.add_segments(segments_to_be_added)
+            
             print("Pricing : "+str(time.time()-a))
             
             count=count+1
             
-            if count%100==0:
+            if count%1==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
@@ -218,8 +244,6 @@ class BaP_Node:
                 time.sleep(0.01)
                 
             c=time.time()
-            
-            self.add_segments(segments_to_be_added)
             
             if not convergence:
                                     
@@ -238,8 +262,10 @@ class BaP_Node:
     def add_segments(self,segs_to_add):
                 
         for l in range(len(self.segments_set)):
+            
+            if segs_to_add[l]!=[]:
                         
-            self.segments_set[l].append(segs_to_add[l])
+                self.segments_set[l].append(segs_to_add[l])
             
     def select_var_to_branch(self): #return a tuple (row, leaf)
         
