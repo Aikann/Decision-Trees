@@ -418,11 +418,11 @@ def create_variables_pricing(depth,master_prob,leaf):
                 
                 idx = left_leaves.index(leaf)
                 
-                s = s + duals[i*num_features + j*num_nodes + idx]
+                s = s + duals[i*(num_nodes*len(left_leaves)) + j*len(left_leaves) + idx]
                 
-            print(s)
+            #print(s)
             
-            if s!=0:
+            if s<0:
                 
                 input()
                 
@@ -440,9 +440,9 @@ def create_variables_pricing(depth,master_prob,leaf):
                 
                 idx = right_leaves.index(leaf)
                 
-                s = s + duals[constraint_indicators[1] + i*num_features + j*num_nodes + idx]
+                s = s + duals[constraint_indicators[1] + i*(num_nodes*len(right_leaves)) + j*len(right_leaves) + idx]
                 
-            print(s)
+            #print(s)
             
             if s<0:
                 

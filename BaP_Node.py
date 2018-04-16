@@ -8,6 +8,18 @@ Created on Tue Apr 10 13:44:53 2018
 from learn_tree_funcs import get_data_size
 from cplex_problems_CG import construct_master_problem, construct_pricing_problem
 import time
+from random import shuffle
+import matplotlib.pyplot as plt
+
+def color_leaf(l):
+    
+    if l==0:
+        
+        return 'b'
+    
+    else:
+    
+        return 'r'
 
 def obtain_depth(d):
     global depth
@@ -129,7 +141,7 @@ def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID,pricing_met
     
     num_leafs = len(segments_set)
         
-    segments_to_be_added, obj_values = [], []
+    segments_to_be_added, obj_values, segments_to_be_added_ordered = [], [], []
     
     if pricing_method==1:
     
@@ -137,31 +149,46 @@ def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID,pricing_met
             
             segments, value = solve_pricing_given_leaf(prob,l,branched_rows,branched_leaves,ID,segments_set[l])
             
-            segments_to_be_added.append(segments)
+            segments_to_be_added_ordered.append(segments)
             
             obj_values.append(value)
+            
+            plt.scatter(count_iter,value,color=color_leaf(l))
+            
+            plt.pause(0.02)
                         
-            print("Reduced cost ",str(value))
+            print("Reduced cost for leaf "+str(l)+" :",str(value))
             
     elif pricing_method==2:
                 
-        excl_rows=[]
+        excl_rows, remember_order = [], []
+        
+        shuffle_leaves=range(num_leafs)
+        
+        shuffle(shuffle_leaves)
         
         for l in range(num_leafs):
             
+            true_l=shuffle_leaves[l]
+            
             if l!=num_leafs-1:
                 
-                segment, value = solve_pricing_given_leaf(prob,l,branched_rows,branched_leaves,ID,segments_set[l],excl_rows)
+                segment, value = solve_pricing_given_leaf(prob,true_l,branched_rows,branched_leaves,ID,segments_set[true_l],excl_rows)
             
                 segments_to_be_added.append(segment)
+                
                 
                 excl_rows.extend(segment)
                 
                 obj_values.append(value)
                 
-                print(segment)
+                #print(segment)
+                
+                plt.scatter(count_iter,value,color=color_leaf(true_l))
+                
+                plt.pause(0.02)
                             
-                print("Reduced cost ",str(value))
+                print("Reduced cost for leaf "+str(true_l)+" :",str(value))
                 
             else:
                 
@@ -169,9 +196,13 @@ def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID,pricing_met
                 
                 segments_to_be_added.append(segment)
                 
-                print(segment)
+                #print(segment)
+                
+            remember_order.append(true_l)
+                
+        segments_to_be_added_ordered = [x for _,x in sorted(zip(remember_order,segments_to_be_added))]
                                 
-    return segments_to_be_added, ((min(obj_values) - int(pricing_method==2)) > -0.01)
+    return segments_to_be_added_ordered, ((min(obj_values) - int(pricing_method==2)) > -0.01)
 
 class BaP_Node:
     
@@ -185,6 +216,10 @@ class BaP_Node:
         self.branched_leaves = branched_leaves #list of corresponding leaves
         
     def solve_relaxation(self): #do CG until the master problem is solved
+        
+        plt.figure()
+                
+        plt.show()
         
         self.prob.solve()
         
@@ -209,7 +244,9 @@ class BaP_Node:
         
         convergence = False
         
-        count=1
+        global count_iter
+        
+        count_iter=1
         
         while not convergence:
             
@@ -217,31 +254,33 @@ class BaP_Node:
             
             self.prob.solve()
             
-            print("MP : "+str(time.time()-b))
+            #print("MP : "+str(time.time()-b))
             
             a=time.time()
-            
-            print("Lauched : ",2-int(count%50==0))
-            
-            segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,2-int(count%50==0))
+                        
+            segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,2-int(count_iter%50==0))
                                 
             self.add_segments(segments_to_be_added)
             
-            print("Pricing : "+str(time.time()-a))
+            #print("Pricing : "+str(time.time()-a))
             
-            count=count+1
+            count_iter=count_iter+1
             
-            if count%1==0:
+            plt.scatter(count_iter,self.prob.solution.get_objective_value(),color='g')
+            
+            plt.pause(0.01)
+            
+            if count_iter%10==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
                 print("Number of segments "+str(sum([len(self.segments_set[l]) for l in range(len(self.segments_set))])))
                 
-                input()
+                #input()
                 
                 #check_unicity(self.segments_set)
-                
-                time.sleep(0.01)
+                                
+                time.sleep(0.1)
                 
             c=time.time()
             
@@ -249,7 +288,7 @@ class BaP_Node:
                                     
                 self.prob = construct_master_problem(depth,self.segments_set)
             
-            print("Construction of MP : "+str(time.time()-c)) 
+            #print("Construction of MP : "+str(time.time()-c)) 
         
         self.solution_value = self.prob.solution.get_objective_value()
         self.solution = self.prob.solution.get_values()
