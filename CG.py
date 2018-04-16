@@ -14,7 +14,6 @@ from cplex_problems_CG import construct_master_problem, obtain_TARGETS
 
 
 
-
 def main(argv):
     
     global TARGETS
