@@ -129,15 +129,25 @@ def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID): #return a
     
     num_leafs = len(segments_set)
     
+    pricing_method=1
+    
     segments_to_be_added, obj_values = [], []
     
-    for l in range(num_leafs): # TODO ; change this loop
+    if pricing_method==1:
+    
+        for l in range(num_leafs): # TODO ; implement new pricing_method
+            
+            segments, value = solve_pricing_given_leaf(prob,l,branched_rows,branched_leaves,ID,segments_set[l])
+            
+            segments_to_be_added.append(segments)
+            
+            obj_values.append(value)
+                        
+            print("Reduced cost ",str(value))
+            
+    elif pricing_method==2:
         
-        segments, value = solve_pricing_given_leaf(prob,l,branched_rows,branched_leaves,ID,segments_set[l])
-        
-        segments_to_be_added.append(segments)
-        
-        obj_values.append(value)
+        s=0
         
     return segments_to_be_added, (min(obj_values) > -0.01)
 
@@ -195,11 +205,13 @@ class BaP_Node:
             
             count=count+1
             
-            if count%50==0:
+            if count%100==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
                 print("Number of segments "+str(sum([len(self.segments_set[l]) for l in range(len(self.segments_set))])))
+                
+                input()
                 
                 #check_unicity(self.segments_set)
                 
@@ -208,10 +220,12 @@ class BaP_Node:
             c=time.time()
             
             self.add_segments(segments_to_be_added)
-                                    
-            self.prob = construct_master_problem(depth,self.segments_set)
             
-            print("Construction of MP : "+str(time.time()-c))
+            if not convergence:
+                                    
+                self.prob = construct_master_problem(depth,self.segments_set)
+            
+            print("Construction of MP : "+str(time.time()-c)) 
         
         self.solution_value = self.prob.solution.get_objective_value()
         self.solution = self.prob.solution.get_values()

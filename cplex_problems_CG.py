@@ -420,7 +420,13 @@ def create_variables_pricing(depth,master_prob,leaf):
                 
                 s = s + duals[i*num_features + j*num_nodes + idx]
                 
-        A_i_l.append(s)
+            print(s)
+            
+            if s!=0:
+                
+                input()
+                
+        A_i_l.append(-s)
     
     for i in range(num_features):
         
@@ -435,6 +441,12 @@ def create_variables_pricing(depth,master_prob,leaf):
                 idx = right_leaves.index(leaf)
                 
                 s = s + duals[constraint_indicators[1] + i*num_features + j*num_nodes + idx]
+                
+            print(s)
+            
+            if s<0:
+                
+                input()
                 
         B_i_l.append(s)
 
@@ -451,6 +463,8 @@ def create_variables_pricing(depth,master_prob,leaf):
         var_lb.append(0)
 
         var_ub.append(1)
+        
+        #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
         
         var_obj.append(duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
 

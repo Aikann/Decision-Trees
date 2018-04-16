@@ -42,11 +42,11 @@ def main(argv):
             
     read_file(inputfile)
    
-    transform_data()
+    #transform_data()
 
-    write_file(inputfile+".transformed")
+    write_file(inputfile)#+".transformed")
    
-    tr.df = tr.get_data(inputfile+".transformed")
+    tr.df = tr.get_data(inputfile)#+".transformed")
                    
     TARGETS, segments_set, best_solution_value=tr.learnTrees_and_return_segments(inputdepth)
     
@@ -68,4 +68,4 @@ def main(argv):
     
     return root_node
     
-r=main(["-firis.csv","-d 1"])
+r=main(["-fweak_test2.csv","-d 1"])
