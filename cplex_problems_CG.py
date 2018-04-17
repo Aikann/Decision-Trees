@@ -654,8 +654,24 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
 
         row_value = row_value + 1
         
+    # constraint to prevent the generated segment to be the entire set
     
+    col_names = [VARS2["row_"+str(r)] for r in range(data_size)]
+    
+    col_values = [1 for r in range(data_size)]
+    
+    row_names.append("#" + str(row_value))
+
+    row_values.append([col_names,col_values])
+
+    row_right_sides.append(data_size-1)
+
+    row_senses = row_senses + "L"
+
+    row_value = row_value + 1
         
+    
+    """
     # constraints to prevent the pricing from generating existing segments
        
     for s in existing_segments:
@@ -683,7 +699,7 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         row_senses = row_senses + "L"
 
         row_value = row_value + 1
-        
+    """
     
         
     #branching constraint (0)

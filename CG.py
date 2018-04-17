@@ -70,4 +70,4 @@ def main(argv):
     
     return root_node
     
-r=main(["-fIndiansDiabetes30rows.csv","-d 1"])
+r=main(["-fIndiansDiabetes80rows.csv","-d 1"])

@@ -63,6 +63,12 @@ class BaP_Node:
         
         count_iter=1
         
+        previous_solution = float('+inf')
+        
+        not_imp=0
+        
+        pricing_method=2
+        
         while not convergence:
             
             #b=time.time()
@@ -73,11 +79,37 @@ class BaP_Node:
             
             #a=time.time()
             
-            pricing_method= (2 + int(100>count_iter>50))*int(count_iter%50!=0) + int(count_iter%50==0)
+            if count_iter%50==0:
+                
+                pricing_method=1
+                
+            else:
+                
+                pricing_method=2
+                
+                """
+            
+                if previous_solution-0.01<=self.prob.solution.get_objective_value()<=previous_solution+0.01:
+                    
+                    not_imp += 1
+                    
+                if not_imp>20 and pricing_method!=3:
+                    
+                    not_imp, pricing_method = 0, 3
+                    
+                elif not_imp>15 and pricing_method!=2:
+                    
+                    not_imp, pricing_method = 0, 2
+                    
+                """
+                    
+                
+                                
+            previous_solution = self.prob.solution.get_objective_value()
                         
             segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
                                 
-            self.add_segments(segments_to_be_added,(pricing_method==3))
+            self.add_segments(segments_to_be_added,True)#(pricing_method==3))
             
             #print("Pricing : "+str(time.time()-a))
             
@@ -87,15 +119,15 @@ class BaP_Node:
             
             plt.pause(0.01)
             
-            if count_iter%50==0:
+            if count_iter%200==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
                 print("Number of segments "+str(sum([len(self.segments_set[l]) for l in range(len(self.segments_set))])))
                 
-                check_unicity(self.segments_set)
-                
-                input()
+                #check_unicity(self.segments_set)
+                                
+                #input()
                                 
                 time.sleep(0.1)
                 

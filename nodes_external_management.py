@@ -157,6 +157,8 @@ def solve_pricing_given_leaf(prob,leaf,branched_rows,branched_leaves,ID,existing
     
     obj_value = obj_value + prob.solution.get_dual_values()[constraint_indicators[3] + leaf]
     
+    #print("Bheta "+str(leaf)+" :"+str(prob.solution.get_dual_values()[constraint_indicators[3] + leaf]))
+    
     segment = extract_rows_pricing(pricing_prob)
         
     return segment, obj_value
@@ -229,7 +231,7 @@ def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID,pricing_met
                 
                 plt.pause(0.01)
                 
-                print(segment)
+                #print(segment)
                             
                 print("Reduced cost for leaf "+str(true_l)+" :",str(value))
                 
@@ -257,7 +259,7 @@ def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID,pricing_met
         
         plt.pause(0.01)
         
-        print(segments)
+        #print(segments)
                     
         print("Reduced cost for partition : ",str(value))
                                 
