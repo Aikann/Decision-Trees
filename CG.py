@@ -5,7 +5,8 @@ Created on Tue Apr 10 13:09:31 2018
 @author: Guillaume
 """
 
-from BaP_Node import BaP_Node, obtain_depth
+from BaP_Node import BaP_Node, obtain_depth2
+from nodes_external_management import obtain_depth, init_rand_hash
 import getopt
 import sys
 import regtrees2 as tr
@@ -52,6 +53,8 @@ def main(argv):
     obtain_TARGETS(TARGETS) #give TARGETS to the cplex_problems_CG module
     
     obtain_depth(inputdepth) #give depth to the BaP_Node module
+    obtain_depth2(inputdepth) #give depth to the BaP_Node module
+    init_rand_hash() #initialize the hash table
     
     tr.get_code()
             
@@ -59,7 +62,7 @@ def main(argv):
     
     #from cplex_problems_CG import VARS #so VARS is accessible from this module
             
-    root_node=BaP_Node(segments_set,prob,"",[],[],[])
+    root_node=BaP_Node(segments_set,prob,"",[],[],[],[[] for l in range(len(segments_set))])
     
     #root_node.prob.solve()
             
@@ -67,4 +70,4 @@ def main(argv):
     
     return root_node
     
-r=main(["-fIndiansDiabetes80rows.csv","-d 1"])
+r=main(["-fIndiansDiabetes30rows.csv","-d 1"])

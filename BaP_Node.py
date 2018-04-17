@@ -6,207 +6,21 @@ Created on Tue Apr 10 13:44:53 2018
 """
 
 from learn_tree_funcs import get_data_size
-from cplex_problems_CG import construct_master_problem, construct_pricing_problem
+from cplex_problems_CG import construct_master_problem
+from nodes_external_management import give_solution_type, solve_pricing, check_unicity, adapt_segments_set, hash_seg
 import time
-from random import shuffle
 import matplotlib.pyplot as plt
 
-def color_leaf(l):
-    
-    if l==0:
-        
-        return 'b'
-    
-    else:
-    
-        return 'r'
 
-def obtain_depth(d):
+def obtain_depth2(d):
+    
     global depth
     depth=d
-    
-def check_unicity(segments_set):
-    
-    check=True
-    
-    for l in range(len(segments_set)):
-        
-        for s1 in range(len(segments_set[l])):
-            
-            for s2 in range(s1,len(segments_set[l])):
-                
-                if s1!=s2 and segments_set[l][s1]==segments_set[l][s2]:
-                
-                    check=False
-                    
-        print(check)
-        
-        if not check:
-            
-            input()
-    
-def extract_rows_pricing(pricing_prob): #return the segment given by the pricing pb
-    
-    seg, sol = [], pricing_prob.solution.get_values()
-    
-    for r in range(get_data_size()):
-        
-        if sol[r] == 1:
-            
-            seg.append(r)
-    
-    return seg
 
-def give_solution_type(prob): #return a string saying if the solution is integral, continuous or infeasible
-    
-    if "infeasible" in prob.solution.status[prob.solution.get_status()]:
-
-        return "infeasible"
-    
-    else:
-        
-        for i in prob.solution.get_values():
-            
-            if (float(i) <= round(i) - 0.01) or (float(i) >= round(i) + 0.01):
-                
-                return "continuous"
-            
-        return "integer"
-    
-def adapt_segments_set(segments_set,row,leaf,branching): #this function adapts the segments_set according to the branching rule
-    
-    new_segments_set=[[] for l in range(len(segments_set))]
-    
-    if branching==1:
-        
-        for l in range(len(segments_set)):
-            
-            for s in segments_set[l]:
-            
-                if l==leaf and row in s:
-                    
-                    new_segments_set[l].append(s)
-                    
-                elif l!=leaf and row not in s:
-                    
-                    new_segments_set[l].append(s)
-                    
-    else:
-        
-        for l in range(len(segments_set)):
-            
-            for s in segments_set[l]:
-            
-                if l==leaf and row not in s:
-                    
-                    new_segments_set[l].append(s)
-                    
-                elif l!=leaf and row in s:
-                    
-                    new_segments_set[l].append(s)    
-    
-    return new_segments_set
-
-def solve_pricing_given_leaf(prob,leaf,branched_rows,branched_leaves,ID,existing_segments,add_rows_excl=[]): #return a tuple (segments, obj_value).
-    
-    rows_to_be_excluded, rows_to_be_included = add_rows_excl, []
-    
-    for l in range(len(branched_leaves)):
-        
-        if branched_leaves[l] == leaf:
-            
-            if ID[l] == 1:
-                
-                rows_to_be_included.append(branched_rows[l])
-                
-            else:
-                
-                rows_to_be_excluded.append(branched_rows[l])
-                
-    pricing_prob = construct_pricing_problem(depth,prob,rows_to_be_excluded,rows_to_be_included,leaf,existing_segments)
-        
-    pricing_prob.solve()
-        
-    obj_value = pricing_prob.solution.get_objective_value()
-    
-    from cplex_problems_CG import constraint_indicators
-    
-    obj_value = obj_value + prob.solution.get_dual_values()[constraint_indicators[3] + leaf]
-    
-    segment = extract_rows_pricing(pricing_prob)
-        
-    return segment, obj_value
-
-def solve_pricing(prob,segments_set,branched_rows,branched_leaves,ID,pricing_method): #return a tuple (segments_to_be_added, convergence)
-    
-    num_leafs = len(segments_set)
-        
-    segments_to_be_added, obj_values, segments_to_be_added_ordered = [], [], []
-    
-    if pricing_method==1:
-    
-        for l in range(num_leafs): # TODO ; implement new pricing_method
-            
-            segments, value = solve_pricing_given_leaf(prob,l,branched_rows,branched_leaves,ID,segments_set[l])
-            
-            segments_to_be_added_ordered.append(segments)
-            
-            obj_values.append(value)
-            
-            plt.scatter(count_iter,value,color=color_leaf(l))
-            
-            plt.pause(0.02)
-                        
-            print("Reduced cost for leaf "+str(l)+" :",str(value))
-            
-    elif pricing_method==2:
-                
-        excl_rows, remember_order = [], []
-        
-        shuffle_leaves=range(num_leafs)
-        
-        shuffle(shuffle_leaves)
-        
-        for l in range(num_leafs):
-            
-            true_l=shuffle_leaves[l]
-            
-            if l!=num_leafs-1:
-                
-                segment, value = solve_pricing_given_leaf(prob,true_l,branched_rows,branched_leaves,ID,segments_set[true_l],excl_rows)
-            
-                segments_to_be_added.append(segment)
-                
-                
-                excl_rows.extend(segment)
-                
-                obj_values.append(value)
-                
-                #print(segment)
-                
-                plt.scatter(count_iter,value,color=color_leaf(true_l))
-                
-                plt.pause(0.02)
-                            
-                print("Reduced cost for leaf "+str(true_l)+" :",str(value))
-                
-            else:
-                
-                segment = [i for i in range(get_data_size()) if i not in excl_rows]
-                
-                segments_to_be_added.append(segment)
-                
-                #print(segment)
-                
-            remember_order.append(true_l)
-                
-        segments_to_be_added_ordered = [x for _,x in sorted(zip(remember_order,segments_to_be_added))]
-                                
-    return segments_to_be_added_ordered, ((min(obj_values) - int(pricing_method==2)) > -0.01)
 
 class BaP_Node:
     
-    def __init__(self,segments_set,prob,ID,parent,branched_rows,branched_leaves):
+    def __init__(self,segments_set,prob,ID,parent,branched_rows,branched_leaves,H):
         
         self.prob=prob #cplex problem
         self.segments_set=segments_set #list containing lists of sets for each leaf
@@ -214,6 +28,7 @@ class BaP_Node:
         self.parent = parent
         self.branched_rows = branched_rows #list of branched rows
         self.branched_leaves = branched_leaves #list of corresponding leaves
+        self.H = H #hash table for segments
         
     def solve_relaxation(self): #do CG until the master problem is solved
         
@@ -240,7 +55,7 @@ class BaP_Node:
                 
                 self.add_segments(segments)
         
-        self.prob = construct_master_problem(depth,self.segments_set)# TODO ; cuurently working, but can be improved : no need to reconstruct the constraints, just the variables
+        self.prob = construct_master_problem(depth,self.segments_set)
         
         convergence = False
         
@@ -250,17 +65,19 @@ class BaP_Node:
         
         while not convergence:
             
-            b=time.time()
+            #b=time.time()
             
             self.prob.solve()
             
             #print("MP : "+str(time.time()-b))
             
-            a=time.time()
+            #a=time.time()
+            
+            pricing_method= (2 + int(100>count_iter>50))*int(count_iter%50!=0) + int(count_iter%50==0)
                         
-            segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,2-int(count_iter%50==0))
+            segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
                                 
-            self.add_segments(segments_to_be_added)
+            self.add_segments(segments_to_be_added,(pricing_method==3))
             
             #print("Pricing : "+str(time.time()-a))
             
@@ -270,19 +87,19 @@ class BaP_Node:
             
             plt.pause(0.01)
             
-            if count_iter%10==0:
+            if count_iter%50==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
                 print("Number of segments "+str(sum([len(self.segments_set[l]) for l in range(len(self.segments_set))])))
                 
-                #input()
+                check_unicity(self.segments_set)
                 
-                #check_unicity(self.segments_set)
+                input()
                                 
                 time.sleep(0.1)
                 
-            c=time.time()
+            #c=time.time()
             
             if not convergence:
                                     
@@ -298,13 +115,25 @@ class BaP_Node:
         
         return
         
-    def add_segments(self,segs_to_add):
+    def add_segments(self,segs_to_add,safe_insertion=False):
                 
         for l in range(len(self.segments_set)):
             
             if segs_to_add[l]!=[]:
+                
+                if safe_insertion:
+                                                                                                                    
+                    if hash_seg(segs_to_add[l]) not in self.H[l]:
+                    
+                        self.segments_set[l].append(segs_to_add[l])
+                                                
+                        self.H[l].append(hash_seg(segs_to_add[l]))
+                            
+                else:
                         
-                self.segments_set[l].append(segs_to_add[l])
+                    self.segments_set[l].append(segs_to_add[l])
+                                            
+                    self.H[l].append(hash_seg(segs_to_add[l]))
             
     def select_var_to_branch(self): #return a tuple (row, leaf)
         
