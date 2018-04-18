@@ -5,9 +5,10 @@ Created on Tue Apr 10 13:44:53 2018
 @author: Guillaume
 """
 
-from learn_tree_funcs import get_data_size
-from cplex_problems_CG import construct_master_problem
-from nodes_external_management import give_solution_type, solve_pricing, check_unicity, adapt_segments_set, hash_seg
+from cplex_problems_CG import construct_master_problem, add_variable_to_master_and_rebuild 
+from nodes_external_management import give_solution_type, check_unicity, adapt_segments_set, hash_seg
+
+from PricingSolver import solve_pricing
 import time
 import matplotlib.pyplot as plt
 
@@ -30,7 +31,7 @@ class BaP_Node:
         self.branched_leaves = branched_leaves #list of corresponding leaves
         self.H = H #hash table for segments
         
-    def solve_relaxation(self): #do CG until the master problem is solved
+    def explore(self): #do CG until the master problem is solved
         
         plt.figure()
                 
@@ -67,20 +68,14 @@ class BaP_Node:
         
         not_imp=0
         
-        pricing_method=1
+        pricing_method=2
         
         while not convergence:
-            
-            #b=time.time()
-            
+                        
             self.prob.solve()
             
-            print(self.prob.solution.get_values())
-            
-            #print("MP : "+str(time.time()-b))
-            
-            #a=time.time()
-            
+            #print(self.prob.solution.get_values())
+                                    
             if count_iter%50==0:
                 
                 pricing_method=1
@@ -89,8 +84,6 @@ class BaP_Node:
                 
                 #pricing_method=2
                 
-                
-            
                 if previous_solution-0.01<=self.prob.solution.get_objective_value()<=previous_solution+0.01:
                     
                     not_imp += 1
@@ -103,25 +96,15 @@ class BaP_Node:
                     
                     not_imp, pricing_method = 0, 2
                     
-                
-                    
-            pricing_method=1   
-                                
             previous_solution = self.prob.solution.get_objective_value()
                         
-            segments_to_be_added, convergence = solve_pricing(self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
-                                
-            self.add_segments(segments_to_be_added,True)#(pricing_method==3))
-            
-            #print("Pricing : "+str(time.time()-a))
-            
-            count_iter=count_iter+1
-            
+            segments_to_be_added, convergence = solve_pricing(depth,self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
+                        
             plt.scatter(count_iter,self.prob.solution.get_objective_value(),color='g')
             
             plt.pause(0.01)
             
-            if count_iter%200==0:
+            if count_iter%30==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
@@ -133,13 +116,29 @@ class BaP_Node:
                                 
                 time.sleep(0.1)
                 
-            #c=time.time()
+            
+            
+            a=time.time()
             
             if not convergence:
-                                    
-                self.prob = construct_master_problem(depth,self.segments_set)
+                                                    
+                self.prob = add_variable_to_master_and_rebuild(self.prob,depth,self.segments_set,segments_to_be_added)
+                
+            print(count_iter,time.time()-a)
             
-            #print("Construction of MP : "+str(time.time()-c)) 
+             
+            self.add_segments(segments_to_be_added,True)
+            """
+            
+            a=time.time()
+                
+            if not convergence:
+                
+                self.prob = construct_master_problem(depth,self.segments_set)
+                
+            print(count_iter,time.time()-a)
+            """          
+            count_iter=count_iter+1
         
         self.solution_value = self.prob.solution.get_objective_value()
         self.solution = self.prob.solution.get_values()
@@ -168,6 +167,8 @@ class BaP_Node:
                     self.segments_set[l].append(segs_to_add[l])
                                             
                     self.H[l].append(hash_seg(segs_to_add[l]))
+                    
+    """ NOT FULLY IMPLEMENTED
             
     def select_var_to_branch(self): #return a tuple (row, leaf)
         
@@ -244,3 +245,5 @@ class BaP_Node:
                 self.create_children_by_branching(row,leaf)
                 
                 return min(self.child1.solve_branch_and_price(), self.child2.solve_branch_and_price())
+                
+    """
