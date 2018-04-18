@@ -12,6 +12,7 @@ import sys
 import regtrees2 as tr
 from learn_tree_funcs import transform_data, read_file, write_file
 from cplex_problems_CG import construct_master_problem, obtain_TARGETS
+import copy
 
 
 def main(argv):
@@ -50,6 +51,18 @@ def main(argv):
                    
     TARGETS, segments_set, best_solution_value=tr.learnTrees_and_return_segments(inputdepth)
     
+    while len(segments_set)!=2**inputdepth:
+        
+        print(len(segments_set[-1][0])/2)
+        
+        L1, L2 = copy.copy(segments_set[-1][0][0:(len(segments_set[-1][0])/2)]), copy.copy(segments_set[-1][0][len(segments_set[-1][0])/2:])
+        
+        segments_set[-1]=[L1]
+        
+        segments_set.append([L2])
+        
+    print(segments_set)
+    
     obtain_TARGETS(TARGETS) #give TARGETS to the cplex_problems_CG module
     
     obtain_depth(inputdepth) #give depth to the BaP_Node module
@@ -70,4 +83,4 @@ def main(argv):
     
     return root_node
     
-r=main(["-fIndiansDiabetes80rows.csv","-d 1"])
+r=main(["-fIndiansDiabetes30rows.csv","-d 2"])

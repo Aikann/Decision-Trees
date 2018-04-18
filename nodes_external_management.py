@@ -11,6 +11,8 @@ from random import shuffle
 import matplotlib.pyplot as plt
 import random
 
+"""HASH FUNCTIONS"""
+
 
 def init_rand_hash():
     random.seed(0)
@@ -20,6 +22,12 @@ def init_rand_hash():
 def hash_seg(seg):
         
     return sum([rand_hash[r] for r in seg])
+
+
+
+"""TOOL FUNCTIONS"""
+
+
 
 def color_leaf(l):
     
@@ -34,6 +42,8 @@ def color_leaf(l):
 def obtain_depth(d):
     global depth
     depth=d
+    
+    
     
 def check_unicity(segments_set):
     
@@ -54,7 +64,13 @@ def check_unicity(segments_set):
         if not check:
             
             input()
+         
+            
+            
+"""EXTRACTING ROWS FROM THE SOLUTION AND THE SOLUTION TYPE"""
     
+
+
 def extract_rows_pricing(pricing_prob): #return the segment given by the pricing pb
     
     seg, sol = [], pricing_prob.solution.get_values()
@@ -97,6 +113,12 @@ def give_solution_type(prob): #return a string saying if the solution is integra
             
         return "integer"
     
+    
+    
+"""BRANCHING FUNCTION"""
+    
+
+
 def adapt_segments_set(segments_set,row,leaf,branching): #TODO ; update hash table. This function adapts the segments_set according to the branching rule
     
     new_segments_set=[[] for l in range(len(segments_set))]
@@ -130,6 +152,12 @@ def adapt_segments_set(segments_set,row,leaf,branching): #TODO ; update hash tab
                     new_segments_set[l].append(s)    
     
     return new_segments_set
+
+
+
+"""SOLVE PRICING MANAGEMENT"""
+
+
 
 def solve_pricing_given_leaf(prob,leaf,branched_rows,branched_leaves,ID,existing_segments,add_rows_excl=[]): #return a tuple (segments, obj_value).
     

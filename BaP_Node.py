@@ -67,13 +67,15 @@ class BaP_Node:
         
         not_imp=0
         
-        pricing_method=2
+        pricing_method=1
         
         while not convergence:
             
             #b=time.time()
             
             self.prob.solve()
+            
+            print(self.prob.solution.get_values())
             
             #print("MP : "+str(time.time()-b))
             
@@ -85,9 +87,9 @@ class BaP_Node:
                 
             else:
                 
-                pricing_method=2
+                #pricing_method=2
                 
-                """
+                
             
                 if previous_solution-0.01<=self.prob.solution.get_objective_value()<=previous_solution+0.01:
                     
@@ -101,9 +103,9 @@ class BaP_Node:
                     
                     not_imp, pricing_method = 0, 2
                     
-                """
-                    
                 
+                    
+            pricing_method=1   
                                 
             previous_solution = self.prob.solution.get_objective_value()
                         
