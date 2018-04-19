@@ -21,7 +21,7 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
     print("Full time : ",time.time()-a)
     
-    print(root_node.prob.solution.get_objective_value())
+    print("Lower bound at root node : ",root_node.prob.solution.get_objective_value())
     
     return root_node
     

@@ -60,13 +60,15 @@ class BaP_Node:
             
             #print(self.prob.solution.get_values())
                                     
-            if count_iter%50==0:
+            if count_iter%10==0:
                 
                 pricing_method=1
                 
             else:
                 
                 #pricing_method=2
+                
+                """
                 
                 if previous_solution-0.01<=self.prob.solution.get_objective_value()<=previous_solution+0.01:
                     
@@ -80,17 +82,19 @@ class BaP_Node:
                     
                     not_imp, pricing_method = 0, 2
                     
-                #pricing_method = 3 - int(count_iter<52)
+                """
+                    
+                pricing_method = 3
                     
             previous_solution = self.prob.solution.get_objective_value()
                         
             segments_to_be_added, convergence = solve_pricing(depth,self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
-                        
+            
             plt.scatter(count_iter,self.prob.solution.get_objective_value(),color='g')
             
             plt.pause(0.01)
             
-            if count_iter%30==0:
+            if count_iter%10==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
@@ -114,16 +118,16 @@ class BaP_Node:
                 
             print(count_iter,time.time()-a)
             
-            """
             
+            """
             a=time.time()
                 
             if not convergence:
                 
-                self.prob = construct_master_problem(depth,self.segments_set)
+                self.prob = create_new_master(depth,self.segments_set)
                 
             print(count_iter,time.time()-a)
-             """     
+              """    
             count_iter=count_iter+1
             
             

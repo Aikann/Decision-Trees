@@ -55,12 +55,30 @@ def solve_pricing_all_at_once(depth,prob,branched_rows,branched_leaves,ID,segmen
     pricing_prob_all_at_once = contruct_pricing_problem_all_at_once(depth,prob,branched_rows,branched_leaves,ID,segments_set)
         
     pricing_prob_all_at_once.solve()
-        
+            
     obj_value = pricing_prob_all_at_once.solution.get_objective_value()
-    
+        
     from cplex_problems_CG import constraint_indicators
     
+    """
+    
+    v=0
+    
+    for l in range(2**depth):
+        
+        for r in range(get_data_size()):
+    
+            print(r,l,pricing_prob_all_at_once.solution.get_values()[v],pricing_prob_all_at_once.objective.get_linear()[v])
+            
+            v=v+1
+    
+    print("OBJ VALUE ",obj_value)
+    
+    """
+    
     obj_value = obj_value + sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))])
+    
+    #print("SUM BHETA ",sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))]))
             
     segment = extract_rows_pricing_all_at_once(pricing_prob_all_at_once,len(segments_set))
         
@@ -150,7 +168,7 @@ def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,prici
         
         plt.pause(0.01)
         
-        print(segments)
+        #print(prob.solution.get_dual_values(),segments)
                     
         print("Reduced cost for partition : ",str(value))
                                 

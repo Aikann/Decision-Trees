@@ -42,7 +42,7 @@ def color_leaf(l):
     
     else:
         
-        return 'p'
+        return 'm'
 
 def obtain_depth(d):
     global depth
@@ -94,11 +94,11 @@ def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
     
         for r in range(datasize):
             
-            if sol[l*datasize + r] == 1:
+            if 0.99 <= sol[l*datasize + r] <= 1.01:
                 
                 seg[l].append(r)
     
-    return seg
+    return seg[::-1]
 
 def give_solution_type(prob): #return a string saying if the solution is integral, continuous or infeasible
     

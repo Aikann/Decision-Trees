@@ -225,7 +225,7 @@ def create_rows_CG(depth,segments_set):
                 
                 col_values.extend([big_M, -1])
 
-                row_names.append("#" + str(row_value))
+                row_names.append("constraint15_" + str(i) + "_" + str(j) + "_" +str(l))
         
                 row_values.append([col_names,col_values])
         
@@ -251,7 +251,7 @@ def create_rows_CG(depth,segments_set):
                 
                 col_values.extend([big_M, 1])
 
-                row_names.append("#" + str(row_value))
+                row_names.append("constraint16_" + str(i) + "_" + str(j) + "_" +str(l))
         
                 row_values.append([col_names,col_values])
         
@@ -277,8 +277,8 @@ def create_rows_CG(depth,segments_set):
                     
                     col_values.extend([1])
                     
-        row_names.append("#" + str(row_value))
-        
+        row_names.append("constraint17_" + str(r))
+                
         row_values.append([col_names,col_values])
 
         row_right_sides.append(1)
@@ -333,7 +333,7 @@ def create_rows_CG(depth,segments_set):
 
             col_values.extend([-1])
             
-            row_names.append("#" + str(row_value))
+            row_names.append("constraint19_" + str(r) + "_" +str(l))
         
             row_values.append([col_names,col_values])
     
@@ -441,9 +441,7 @@ def create_variables_pricing(depth,master_prob,leaf):
     num_leafs = 2**depth
 
     num_nodes = num_leafs-1
-    
-    duals = master_prob.solution.get_dual_values()
-    
+        
     #compute useful sums of dual values
     
     A_i_l, B_i_l = [], []
@@ -457,10 +455,8 @@ def create_variables_pricing(depth,master_prob,leaf):
             left_leaves = get_left_leafs(j,num_nodes)
             
             if leaf in left_leaves:
-                
-                idx = left_leaves.index(leaf)
-                
-                s = s + duals[i*(num_nodes*len(left_leaves)) + j*len(left_leaves) + idx]
+                                
+                s = s + master_prob.solution.get_dual_values("constraint15_"+str(i)+"_"+str(j)+"_"+str(leaf))
                 
             #print(s)
             
@@ -479,10 +475,8 @@ def create_variables_pricing(depth,master_prob,leaf):
             right_leaves = get_right_leafs(j,num_nodes)
             
             if leaf in right_leaves:
-                
-                idx = right_leaves.index(leaf)
-                
-                s = s + duals[constraint_indicators[1] + i*(num_nodes*len(right_leaves)) + j*len(right_leaves) + idx]
+                                
+                s = s + master_prob.solution.get_dual_values("constraint16_"+str(i)+"_"+str(j)+"_"+str(leaf))
                 
             #print(s)
             
@@ -508,7 +502,7 @@ def create_variables_pricing(depth,master_prob,leaf):
         
         #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
         
-        var_obj.append(duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
+        var_obj.append(master_prob.solution.get_dual_values("constraint17_"+str(r)) + master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
 
         var_value = var_value + 1
         
@@ -631,7 +625,7 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
         col_names.extend([VARS2["row_"+str(r)]])
         
-        col_values.extend([-1])
+        col_values.extend([-num_features])
         
         row_names.append("#" + str(row_value))
 
@@ -651,7 +645,7 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
         col_names.extend([VARS2["row_"+str(r)]])
         
-        col_values.extend([-1])
+        col_values.extend([-num_features])
         
         row_names.append("#" + str(row_value))
 
@@ -793,50 +787,42 @@ def construct_pricing_problem(depth,master_prob,exc_rows,incl_rows,leaf,existing
     
     prob = cplex.Cplex()
     
-    try:
+    prob.objective.set_sense(prob.objective.sense.minimize)
 
-        prob.objective.set_sense(prob.objective.sense.minimize)
+    VARS2, var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing(depth,master_prob,leaf)
+                    
+    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
 
-        VARS2, var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing(depth,master_prob,leaf)
-                        
-        prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
+    row_names, row_values, row_right_sides, row_senses = create_rows_pricing(depth,exc_rows,incl_rows,existing_segments)
+    
+    prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
+    
+    prob.parameters.emphasis.mip.set(1)
 
-        row_names, row_values, row_right_sides, row_senses = create_rows_pricing(depth,exc_rows,incl_rows,existing_segments)
-        
-        prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
-        
-        prob.parameters.emphasis.mip.set(1)
+    #prob.parameters.advance.set(2)
+    
+    #prob.parameters.mip.strategy.branch.set(1)
+    #prob.parameters.mip.strategy.backtrack.set(1.0)
+    #prob.parameters.mip.strategy.nodeselect.set(2)
+    prob.parameters.mip.strategy.variableselect.set(-1)
+    #prob.parameters.mip.strategy.bbinterval.set(0)
+    #prob.parameters.mip.strategy.rinsheur.set(50)
+    #prob.parameters.mip.strategy.lbheur.set(1)
+    #prob.parameters.mip.strategy.probe.set(3)
 
-        #prob.parameters.advance.set(2)
-        
-        #prob.parameters.mip.strategy.branch.set(1)
-        #prob.parameters.mip.strategy.backtrack.set(1.0)
-        #prob.parameters.mip.strategy.nodeselect.set(2)
-        prob.parameters.mip.strategy.variableselect.set(-1)
-        #prob.parameters.mip.strategy.bbinterval.set(0)
-        #prob.parameters.mip.strategy.rinsheur.set(50)
-        #prob.parameters.mip.strategy.lbheur.set(1)
-        #prob.parameters.mip.strategy.probe.set(3)
-
-        #prob.parameters.preprocessing.presolve.set(1)
-                        
-        prob.set_log_stream(None)
-        prob.set_error_stream(None)
-        prob.set_warning_stream(None)
-        prob.set_results_stream(None)
-        
-    except CplexError, exc:
-
-        print exc
-        
-        return []
+    #prob.parameters.preprocessing.presolve.set(1)
+                    
+    prob.set_log_stream(None)
+    prob.set_error_stream(None)
+    prob.set_warning_stream(None)
+    prob.set_results_stream(None)
     
     return prob
 
 def create_variables_pricing_all_at_once(depth,master_prob):
     
     global VARS3
-
+    
     VARS3={}
 
     var_value = 0
@@ -858,9 +844,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
     num_leafs = 2**depth
 
     num_nodes = num_leafs-1
-    
-    duals = master_prob.solution.get_dual_values()
-    
+        
     #compute useful sums of dual values
     
     A_i_l, B_i_l = [[] for l in range(num_leafs)], [[] for l in range(num_leafs)]
@@ -876,16 +860,16 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                 left_leaves = get_left_leafs(j,num_nodes)
                 
                 if leaf in left_leaves:
-                    
-                    idx = left_leaves.index(leaf)
-                    
-                    s = s + duals[i*(num_nodes*len(left_leaves)) + j*len(left_leaves) + idx]
+                                        
+                    s = s + master_prob.solution.get_dual_values("constraint15_"+str(i)+"_"+str(j)+"_"+str(leaf))
                     
                 #print(s)
                 
                 if s<0:
                     
-                    input()
+                    print(s)
+                    
+                    input("STOP A")
                     
             A_i_l[leaf].append(-s)
         
@@ -899,21 +883,26 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                 
                 if leaf in right_leaves:
                     
-                    idx = right_leaves.index(leaf)
-                    
-                    s = s + duals[constraint_indicators[1] + i*(num_nodes*len(right_leaves)) + j*len(right_leaves) + idx]
+                    s = s + master_prob.solution.get_dual_values("constraint16_"+str(i)+"_"+str(j)+"_"+str(leaf))
                     
                 #print(s)
                 
                 if s<0:
                     
-                    input()
+                    print(s)
                     
-            B_i_l[leaf].append(s)
+                    input("STOP B")
+                    
+            B_i_l[leaf].append(-s)
 
+    #print("SUM DUALS :",A_i_l," ",B_i_l)
     # z_{r,l}, main decision variables
     
     for leaf in range(num_leafs):
+        
+        #print("SUM0",sum([duals[constraint_indicators[2] + r2] + duals[constraint_indicators[4] + r2*num_leafs] for r2 in [0, 1, 4, 8, 11, 15, 16, 17, 18, 19, 21, 23, 24, 27, 28, 29]])+duals[constraint_indicators[3]])
+            
+        #print("SUM1",sum([duals[constraint_indicators[2] + r3] + duals[constraint_indicators[4] + r3*num_leafs + 1] for r3 in [2, 3, 5, 6, 7, 9, 10, 12, 13, 14, 20, 22, 25, 26]])+duals[constraint_indicators[3]+1])
 
         for r in range(data_size):
     
@@ -928,8 +917,8 @@ def create_variables_pricing_all_at_once(depth,master_prob):
             var_ub.append(1)
             
             #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
-            
-            var_obj.append(duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
+                                                
+            var_obj.append(master_prob.solution.get_dual_values("constraint17_"+str(r)) + master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
     
             var_value = var_value + 1
         
@@ -1065,7 +1054,7 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
             
             col_names.extend([VARS3["row_" + str(l) + "_" + str(r)]])
             
-            col_values.extend([-1])
+            col_values.extend([-num_features])
             
             row_names.append("#" + str(row_value))
     
@@ -1087,7 +1076,7 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
             
             col_names.extend([VARS3["row_" + str(l) + "_" + str(r)]])
             
-            col_values.extend([-1])
+            col_values.extend([-num_features])
             
             row_names.append("#" + str(row_value))
     
@@ -1181,7 +1170,7 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
 
         row_value = row_value + 1
         
-    """
+    
         
     #branching constraints
     
@@ -1209,6 +1198,8 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
     
         row_value = row_value + 1
     
+    """
+    
     return row_names, row_values, row_right_sides, row_senses
 
 
@@ -1219,43 +1210,36 @@ def contruct_pricing_problem_all_at_once(depth,master_prob,branched_rows,branche
     global TARGETS
     
     prob = cplex.Cplex()
+
+    prob.objective.set_sense(prob.objective.sense.minimize)
+
+    VARS3, var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing_all_at_once(depth,master_prob)
+            
+    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
+
+    row_names, row_values, row_right_sides, row_senses = create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,existing_segments)
     
-    try:
+    prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
+    
+    prob.parameters.emphasis.mip.set(1)
 
-        prob.objective.set_sense(prob.objective.sense.minimize)
+    #prob.parameters.advance.set(2)
+    
+    #prob.parameters.mip.strategy.branch.set(1)
+    #prob.parameters.mip.strategy.backtrack.set(1.0)
+    #prob.parameters.mip.strategy.nodeselect.set(2)
+    prob.parameters.mip.strategy.variableselect.set(-1)
+    #prob.parameters.mip.strategy.bbinterval.set(0)
+    #prob.parameters.mip.strategy.rinsheur.set(50)
+    #prob.parameters.mip.strategy.lbheur.set(1)
+    #prob.parameters.mip.strategy.probe.set(3)
 
-        VARS3, var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing_all_at_once(depth,master_prob)
-                
-        prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
+    #prob.parameters.preprocessing.presolve.set(1)
+                    
+    prob.set_log_stream(None)
+    prob.set_error_stream(None)
+    prob.set_warning_stream(None)
+    prob.set_results_stream(None)
 
-        row_names, row_values, row_right_sides, row_senses = create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,existing_segments)
-        
-        prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
-        
-        prob.parameters.emphasis.mip.set(1)
-
-        #prob.parameters.advance.set(2)
-        
-        #prob.parameters.mip.strategy.branch.set(1)
-        #prob.parameters.mip.strategy.backtrack.set(1.0)
-        #prob.parameters.mip.strategy.nodeselect.set(2)
-        prob.parameters.mip.strategy.variableselect.set(-1)
-        #prob.parameters.mip.strategy.bbinterval.set(0)
-        #prob.parameters.mip.strategy.rinsheur.set(50)
-        #prob.parameters.mip.strategy.lbheur.set(1)
-        #prob.parameters.mip.strategy.probe.set(3)
-
-        #prob.parameters.preprocessing.presolve.set(1)
-                        
-        prob.set_log_stream(None)
-        prob.set_error_stream(None)
-        prob.set_warning_stream(None)
-        prob.set_results_stream(None)
-        
-    except CplexError, exc:
-
-        print exc
-
-        return []
     
     return prob
