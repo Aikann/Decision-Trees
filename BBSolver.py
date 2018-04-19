@@ -7,6 +7,7 @@ Created on Wed Apr 18 10:12:37 2018
 
 from RMPSolver import construct_master_problem
 from BaP_Node import BaP_Node
+import time
 
 def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
@@ -14,11 +15,15 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
                 
     root_node=BaP_Node(segments_set,prob,"",[],[],[],[[] for l in range(len(segments_set))]) #construct root node
     
+    a=time.time()
+    
     root_node.explore()
+    
+    print("Full time : ",time.time()-a)
     
     print(root_node.prob.solution.get_objective_value())
     
-    return
+    return root_node
     
     if root_node.solution_type == 'integer':
         

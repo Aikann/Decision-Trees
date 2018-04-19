@@ -43,8 +43,6 @@ def main(argv):
         
     print(segments_set)
     
-    BBSolver(TARGETS, segments_set, best_solution_value, inputdepth)
-    
-    return
+    return BBSolver(TARGETS, segments_set, best_solution_value, inputdepth)
     
 r=main(["-fIndiansDiabetes30rows.csv","-d 1"])

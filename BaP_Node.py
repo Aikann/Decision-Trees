@@ -11,6 +11,7 @@ from nodes_external_management import give_solution_type, check_unicity, adapt_s
 from PricingSolver import solve_pricing
 import time
 import matplotlib.pyplot as plt
+import copy
 
 
 def obtain_depth2(d):
@@ -120,15 +121,33 @@ class BaP_Node:
             
             a=time.time()
             
+            """
+            
+            if count_iter>100 and not_imp>6 and pricing_method==3:
+                
+                from cplex_problems_CG import VARS
+                
+                print(VARS)
+                
+                return
+                
+            """
+            
+            previous_seg_set = copy.deepcopy(self.segments_set)
+            
+            self.add_segments(segments_to_be_added,True)
+            
+            
+            
             if not convergence:
                                                     
-                self.prob = add_variable_to_master_and_rebuild(self.prob,depth,self.segments_set,segments_to_be_added)
+                self.prob = add_variable_to_master_and_rebuild(self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
                 
             print(count_iter,time.time()-a)
             
-             
-            self.add_segments(segments_to_be_added,True)
             """
+            
+            
             
             a=time.time()
                 
@@ -137,8 +156,10 @@ class BaP_Node:
                 self.prob = construct_master_problem(depth,self.segments_set)
                 
             print(count_iter,time.time()-a)
-            """          
+             """     
             count_iter=count_iter+1
+            
+            
         
         self.solution_value = self.prob.solution.get_objective_value()
         self.solution = self.prob.solution.get_values()
