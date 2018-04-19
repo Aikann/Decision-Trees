@@ -150,7 +150,7 @@ def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,prici
         
         plt.pause(0.01)
         
-        #print(segments)
+        print(segments)
                     
         print("Reduced cost for partition : ",str(value))
                                 

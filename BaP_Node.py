@@ -5,7 +5,7 @@ Created on Tue Apr 10 13:44:53 2018
 @author: Guillaume
 """
 
-from cplex_problems_CG import construct_master_problem, add_variable_to_master_and_rebuild 
+from RMPSolver import add_column, solveRMP, create_new_master
 from nodes_external_management import give_solution_type, check_unicity, adapt_segments_set, hash_seg
 
 from PricingSolver import solve_pricing
@@ -38,27 +38,10 @@ class BaP_Node:
                 
         plt.show()
         
-        self.prob.solve()
+        solveRMP(self.prob)
         
         print(self.segments_set)
                 
-        if give_solution_type(self.prob)=='infeasible': #if master problem is infeasible in the first place...
-            
-            is_truly_infeasible, segments = self.solve_warm_up() #check if it is really an infeasible problem
-            
-            if is_truly_infeasible: #if yes, just return infeasibility
-                
-                self.solution_type = 'infeasible'
-                self.solution_value = float('+inf')
-                
-                return
-            
-            else: #if no, add the necessary segments, and proceed to the "usual" algorithm
-                
-                self.add_segments(segments)
-        
-        self.prob = construct_master_problem(depth,self.segments_set)
-        
         convergence = False
         
         global count_iter
@@ -97,6 +80,8 @@ class BaP_Node:
                     
                     not_imp, pricing_method = 0, 2
                     
+                #pricing_method = 3 - int(count_iter<52)
+                    
             previous_solution = self.prob.solution.get_objective_value()
                         
             segments_to_be_added, convergence = solve_pricing(depth,self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
@@ -117,37 +102,19 @@ class BaP_Node:
                                 
                 time.sleep(0.1)
                 
-            
-            
             a=time.time()
-            
-            """
-            
-            if count_iter>100 and not_imp>6 and pricing_method==3:
-                
-                from cplex_problems_CG import VARS
-                
-                print(VARS)
-                
-                return
-                
-            """
             
             previous_seg_set = copy.deepcopy(self.segments_set)
             
             self.add_segments(segments_to_be_added,True)
             
-            
-            
             if not convergence:
                                                     
-                self.prob = add_variable_to_master_and_rebuild(self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
+                self.prob = add_column(self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
                 
             print(count_iter,time.time()-a)
             
             """
-            
-            
             
             a=time.time()
                 

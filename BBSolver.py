@@ -5,13 +5,13 @@ Created on Wed Apr 18 10:12:37 2018
 @author: Guillaume
 """
 
-from RMPSolver import construct_master_problem
+from RMPSolver import create_new_master
 from BaP_Node import BaP_Node
 import time
 
 def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
-    prob=construct_master_problem(inputdepth,segments_set)
+    prob=create_new_master(inputdepth,segments_set)
                 
     root_node=BaP_Node(segments_set,prob,"",[],[],[],[[] for l in range(len(segments_set))]) #construct root node
     
