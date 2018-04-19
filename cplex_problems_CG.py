@@ -13,6 +13,48 @@ from cplex.exceptions import CplexError
 def obtain_TARGETS(t):
     global TARGETS
     TARGETS=t
+    
+def add_variable_to_master_and_rebuild(prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
+    
+    global VARS
+            
+    try:
+        
+        value=prob.variables.get_num()
+        
+        var_types, var_lb, var_ub, var_obj = "", [], [], []
+        
+        for leaf in range(len(prev_segments_set)):
+
+            VARS["segment_leaf_" + str(len(prev_segments_set[leaf])) + "_" + str(leaf)] = value
+        
+            var_types += "C"
+        
+            var_lb.append(0)
+        
+            var_ub.append(1)
+        
+            var_obj.append(0)
+            
+            value=value+1
+                        
+        prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
+
+        row_names, row_values, row_right_sides, row_senses = create_rows_CG(inputdepth,segments_set)
+        
+        prob.linear_constraints.delete()
+        
+        prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
+        
+        prob.set_problem_type(0)
+                                        
+    except CplexError, exc:
+
+        print exc
+        
+        return []
+    
+    return prob
 
 def create_variables_CG(depth,segments_set):
     
@@ -756,7 +798,7 @@ def construct_pricing_problem(depth,master_prob,exc_rows,incl_rows,leaf,existing
         prob.objective.set_sense(prob.objective.sense.minimize)
 
         VARS2, var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing(depth,master_prob,leaf)
-                
+                        
         prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
 
         row_names, row_values, row_right_sides, row_senses = create_rows_pricing(depth,exc_rows,incl_rows,existing_segments)
@@ -786,7 +828,7 @@ def construct_pricing_problem(depth,master_prob,exc_rows,incl_rows,leaf,existing
     except CplexError, exc:
 
         print exc
-
+        
         return []
     
     return prob
