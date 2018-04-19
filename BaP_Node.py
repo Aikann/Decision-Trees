@@ -106,7 +106,7 @@ class BaP_Node:
                     
                 
                     
-            pricing_method=1   
+            #pricing_method=1   
                                 
             previous_solution = self.prob.solution.get_objective_value()
                         
