@@ -15,6 +15,6 @@ def solveRMP(prob):
     
     prob.solve()
     
-def add_column(prob,inputdepth,segments_set,segment_to_add,leaf):
+def add_column(depth,prob,inputdepth,segments_set,segment_to_add,leaf):
     
-    return add_variable_to_master_and_rebuild(prob,inputdepth,segments_set,segment_to_add,leaf)
+    return add_variable_to_master_and_rebuild(depth,prob,inputdepth,segments_set,segment_to_add,leaf)

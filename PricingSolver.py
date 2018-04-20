@@ -106,9 +106,11 @@ def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,prici
             
             obj_values.append(value)
             
-            plt.scatter(count_iter,value,color=color_leaf(l))
+            if value > -200:
             
-            plt.pause(0.01)
+                plt.scatter(count_iter,value,color=color_leaf(l))
+            
+                plt.pause(0.01)
                         
             print("Reduced cost for leaf "+str(l)+" :",str(value))
             
@@ -172,4 +174,4 @@ def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,prici
                     
         print("Reduced cost for partition : ",str(value))
                                 
-    return segments_to_be_added_ordered, ((min(obj_values) - int(pricing_method>=2)) > -0.01)
+    return segments_to_be_added_ordered, ((min(obj_values) - int(pricing_method>=2)) > -0.01), min(obj_values)

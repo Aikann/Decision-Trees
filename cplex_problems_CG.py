@@ -14,45 +14,109 @@ def obtain_TARGETS(t):
     global TARGETS
     TARGETS=t
     
-def add_variable_to_master_and_rebuild(prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
+def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
     
     global VARS
+    
+    num_features = get_num_features()
+    
+    data_size = get_data_size()
+
+    num_leafs = 2**depth
+
+    num_nodes = num_leafs-1
+                    
+    value=prob.variables.get_num()
+    
+    var_types, var_lb, var_ub, var_obj = "", [], [], []
+    
+    my_columns = [[[],[]] for leaf in range(num_leafs)]
+    
+    for leaf in range(num_leafs):
+
+        VARS["segment_leaf_" + str(len(prev_segments_set[leaf])) + "_" + str(leaf)] = value
+    
+        var_types += "C"
+    
+        var_lb.append(0)
+    
+        var_ub.append(1)
+    
+        var_obj.append(0)
+        
+        value=value+1
+        
+        row_value=0
+        
+        s=segments_to_add[leaf]
+        
+        for i in range(num_features): #constraint (15)
+
+            for j in range(num_nodes):
+        
+                for l in get_left_leafs(j, num_nodes):
+
+                    my_columns[leaf][0].append(row_value)
+
+                    my_columns[leaf][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
+                    
+                    row_value = row_value + 1
+                    
+        for i in range(num_features): #constraint (16)
+
+            for j in range(num_nodes):
+        
+                for l in get_right_leafs(j, num_nodes):
+
+                    my_columns[leaf][0].append(row_value)
+
+                    my_columns[leaf][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
+                    
+                    row_value = row_value + 1
+                    
+        for r in range(data_size): #constraint (17)
             
-    try:
-        
-        value=prob.variables.get_num()
-        
-        var_types, var_lb, var_ub, var_obj = "", [], [], []
-        
-        for leaf in range(len(prev_segments_set)):
+            if r in s:
+                
+                my_columns[leaf][0].append(row_value)
 
-            VARS["segment_leaf_" + str(len(prev_segments_set[leaf])) + "_" + str(leaf)] = value
-        
-            var_types += "C"
-        
-            var_lb.append(0)
-        
-            var_ub.append(1)
-        
-            var_obj.append(0)
+                my_columns[leaf][1].append(1)
+                
+            row_value = row_value + 1
             
-            value=value+1
-                        
-        prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
+        for l in range(num_leafs): #constraint (18)
+            
+            if l==leaf:
+                
+                my_columns[leaf][0].append(row_value)
 
-        row_names, row_values, row_right_sides, row_senses = create_rows_CG(inputdepth,segments_set)
+                my_columns[leaf][1].append(1)
+                
+            row_value = row_value + 1
+            
+        for r in range(data_size): #constraint (19)
         
-        prob.linear_constraints.delete()
-        
-        prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
-        
-        prob.set_problem_type(0)
-                                        
-    except CplexError, exc:
+            for l in range(num_leafs):
+                                
+                if l == leaf:
+                    
+                    if r in s:
+                
+                        my_columns[leaf][0].append(row_value)
 
-        print exc
-        
-        return []
+                        my_columns[leaf][1].append(1)
+                
+                row_value = row_value + 1
+                                    
+    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, columns = my_columns)#, names = var_names)
+
+    #row_names, row_values, row_right_sides, row_senses = create_rows_CG(inputdepth,segments_set)
+    
+    #prob.linear_constraints.delete()
+    
+    #prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
+    
+    prob.set_problem_type(0)
     
     return prob
 

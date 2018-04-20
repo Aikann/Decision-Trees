@@ -45,4 +45,4 @@ def main(argv):
     
     return BBSolver(TARGETS, segments_set, best_solution_value, inputdepth)
     
-root=main(["-firis.csv","-d 2"])
+root=main(["-fIndiansDiabetes80rows.csv","-d 1"])

@@ -48,11 +48,13 @@ class BaP_Node:
         
         count_iter=1
         
-        previous_solution = float('+inf')
+        #previous_solution = float('+inf')
         
-        not_imp=0
+        #not_imp=0
         
-        pricing_method=2
+        #pricing_method=3
+        
+        red_cost = float('-inf')
         
         while not convergence:
                         
@@ -60,7 +62,7 @@ class BaP_Node:
             
             #print(self.prob.solution.get_values())
                                     
-            if count_iter%10==0:
+            if red_cost >= -0.01:
                 
                 pricing_method=1
                 
@@ -86,9 +88,9 @@ class BaP_Node:
                     
                 pricing_method = 3
                     
-            previous_solution = self.prob.solution.get_objective_value()
+            #☻previous_solution = self.prob.solution.get_objective_value()
                         
-            segments_to_be_added, convergence = solve_pricing(depth,self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
+            segments_to_be_added, convergence, red_cost = solve_pricing(depth,self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
             
             plt.scatter(count_iter,self.prob.solution.get_objective_value(),color='g')
             
@@ -114,7 +116,7 @@ class BaP_Node:
             
             if not convergence:
                                                     
-                self.prob = add_column(self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
+                self.prob = add_column(depth,self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
                 
             print(count_iter,time.time()-a)
             
