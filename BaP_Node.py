@@ -5,7 +5,7 @@ Created on Tue Apr 10 13:44:53 2018
 @author: Guillaume
 """
 
-from RMPSolver import add_column, solveRMP, create_new_master
+from RMPSolver import add_column, solveRMP, display_RMP_solution_dual, display_RMP_solution_primal, create_new_master
 from nodes_external_management import give_solution_type, check_unicity, adapt_segments_set, hash_seg
 
 from PricingSolver import solve_pricing
@@ -37,10 +37,8 @@ class BaP_Node:
         plt.figure()
                 
         plt.show()
-        
-        solveRMP(self.prob)
-        
-        print(self.segments_set)
+                        
+        #print(self.segments_set)
                 
         convergence = False
         
@@ -57,8 +55,22 @@ class BaP_Node:
         red_cost = float('-inf')
         
         while not convergence:
+            """
+            if count_iter==2:
+                
+                print(self.segments_set)
+            
+                del self.segments_set[0][0]
+                
+                self.prob = create_new_master(depth, self.segments_set)
+            """
+            c=time.time()
                         
-            self.prob.solve()
+            solveRMP(self.prob)
+            
+            #display_RMP_solution_primal(depth,self.prob,count_iter,self.segments_set)
+            
+            print(count_iter,"Time MP :",time.time()-c)
             
             #print(self.prob.solution.get_values())
                                     
@@ -88,9 +100,13 @@ class BaP_Node:
                     
                 pricing_method = 3
                     
-            #☻previous_solution = self.prob.solution.get_objective_value()
+            #previous_solution = self.prob.solution.get_objective_value()
+            
+            b=time.time()
                         
             segments_to_be_added, convergence, red_cost = solve_pricing(depth,self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
+            
+            print(count_iter,"Time pricing :",time.time()-b)
             
             plt.scatter(count_iter,self.prob.solution.get_objective_value(),color='g')
             
@@ -110,15 +126,21 @@ class BaP_Node:
                 
             a=time.time()
             
+            #print("Full set",self.segments_set)
+            
+            #print("seg to be added",segments_to_be_added)
+            
             previous_seg_set = copy.deepcopy(self.segments_set)
             
             self.add_segments(segments_to_be_added,True)
             
+            #print("Full set after addition",self.segments_set)
+                        
             if not convergence:
                                                     
                 self.prob = add_column(depth,self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
                 
-            print(count_iter,time.time()-a)
+            print(count_iter,"Time MP construction :",time.time()-a)
             
             
             """

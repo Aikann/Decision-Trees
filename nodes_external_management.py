@@ -7,6 +7,7 @@ Created on Tue Apr 17 11:27:19 2018
 
 from learn_tree_funcs import get_data_size
 import random
+import copy
 
 """HASH FUNCTIONS"""
 
@@ -88,15 +89,63 @@ def extract_rows_pricing(pricing_prob): #return the segment given by the pricing
 
 def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
     
+    from cplex_problems_CG import VARS3
+    
     seg, sol, datasize = [[] for l in range(num_leafs)], pricing_prob_all_at_once.solution.get_values(), get_data_size()
     
     for l in range(num_leafs):
     
         for r in range(datasize):
             
-            if 0.99 <= sol[l*datasize + r] <= 1.01:
+            if 0.99 <= sol[VARS3["row_" + str(l) + "_" + str(r)]] <= 1.01:
                 
                 seg[l].append(r)
+                
+    from learn_tree_funcs import get_feature_value, get_num_features
+    
+    
+    for i in range(get_num_features()):
+        
+        for l in range(len(seg)):
+                        
+            for r in range(datasize):
+                                
+                if pricing_prob_all_at_once.solution.get_values(VARS3["kappa_" + str(l) + "_"  + str(r) + "_" + str(i)])==1:
+                    
+                    #print(l,r,i,r in seg[l])
+                    
+                    #print(min([get_feature_value(r2,i) for r2 in seg[l]]),get_feature_value(r,i))
+            
+                    assert min([get_feature_value(r2,i) for r2 in seg[l]]) == get_feature_value(r,i)
+                    
+                if pricing_prob_all_at_once.solution.get_values(VARS3["omega_" + str(l) + "_"  + str(r) + "_" + str(i)])==1:
+                    
+                    #print(l,r,i,r in seg[l])
+                    
+                    #print(min([get_feature_value(r2,i) for r2 in seg[l]]),get_feature_value(r,i))
+            
+                    assert max([get_feature_value(r2,i) for r2 in seg[l]]) == get_feature_value(r,i)
+                                                                 
+    """
+    c_list = [copy.deepcopy(seg[i]) for i in range(4)]
+    
+    seg[0]=c_list[3]
+    seg[1]=c_list[2]
+    seg[2]=c_list[0]
+    seg[3]=c_list[1]
+    
+    
+    #original=copy.deepcopy(seg)
+    
+    random.shuffle(seg)
+    
+    #for s in seg:
+        
+       # print(original.index(s))
+        
+    #input()
+    """
+    #print("Extract seg",seg)
     
     return seg[::-1]
 

@@ -645,15 +645,15 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
                     
                     col_values.extend([1./data_size])
     
-        row_names.append("#" + str(row_value))
-
-        row_values.append([col_names,col_values])
-
-        row_right_sides.append(1)
-
-        row_senses = row_senses + "L"
-
-        row_value = row_value + 1
+            row_names.append("#" + str(row_value))
+    
+            row_values.append([col_names,col_values])
+    
+            row_right_sides.append(1)
+    
+            row_senses = row_senses + "L"
+    
+            row_value = row_value + 1
      
     for r in range(data_size): #constraint (33)
         
@@ -671,15 +671,15 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
                     
                     col_values.extend([1./data_size])
     
-        row_names.append("#" + str(row_value))
-
-        row_values.append([col_names,col_values])
-
-        row_right_sides.append(1)
-
-        row_senses = row_senses + "L"
-
-        row_value = row_value + 1
+            row_names.append("#" + str(row_value))
+    
+            row_values.append([col_names,col_values])
+    
+            row_right_sides.append(1)
+    
+            row_senses = row_senses + "L"
+    
+            row_value = row_value + 1
         
     for r in range(data_size): #constraint (34)
         
@@ -926,7 +926,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                 if leaf in left_leaves:
                                         
                     s = s + master_prob.solution.get_dual_values("constraint15_"+str(i)+"_"+str(j)+"_"+str(leaf))
-                    
+                                        
                 #print(s)
                 
                 if s<0:
@@ -948,7 +948,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                 if leaf in right_leaves:
                     
                     s = s + master_prob.solution.get_dual_values("constraint16_"+str(i)+"_"+str(j)+"_"+str(leaf))
-                    
+                                        
                 #print(s)
                 
                 if s<0:
@@ -959,7 +959,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                     
             B_i_l[leaf].append(-s)
 
-    #print("SUM DUALS :",A_i_l," ",B_i_l)
+    print("SUM DUALS :",A_i_l," ",B_i_l)
     # z_{r,l}, main decision variables
     
     for leaf in range(num_leafs):
@@ -981,7 +981,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
             var_ub.append(1)
             
             #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
-                                                
+                                                            
             var_obj.append(master_prob.solution.get_dual_values("constraint17_"+str(r)) + master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
     
             var_value = var_value + 1
@@ -1070,15 +1070,15 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
                         
                         col_values.extend([1./data_size])
         
-            row_names.append("#" + str(row_value))
-    
-            row_values.append([col_names,col_values])
-    
-            row_right_sides.append(1)
-    
-            row_senses = row_senses + "L"
-    
-            row_value = row_value + 1
+                row_names.append("#" + str(row_value))
+        
+                row_values.append([col_names,col_values])
+        
+                row_right_sides.append(1)
+        
+                row_senses = row_senses + "L"
+        
+                row_value = row_value + 1
             
     for l in range(num_leafs):
      
@@ -1098,15 +1098,15 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
                         
                         col_values.extend([1./data_size])
         
-            row_names.append("#" + str(row_value))
-    
-            row_values.append([col_names,col_values])
-    
-            row_right_sides.append(1)
-    
-            row_senses = row_senses + "L"
-    
-            row_value = row_value + 1
+                row_names.append("#" + str(row_value))
+        
+                row_values.append([col_names,col_values])
+        
+                row_right_sides.append(1)
+        
+                row_senses = row_senses + "L"
+        
+                row_value = row_value + 1
             
     for l in range(num_leafs):
         

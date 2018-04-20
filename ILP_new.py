@@ -1147,7 +1147,7 @@ def main(argv):
    
    
    
-ws=main(['-fIndiansDiabetes30rows.csv', '-d 1', '-s 1', '-t 30', '-y 0', '-p 0', '-c 1'])
+ws=main(['-firis.csv', '-d 1', '-s 1', '-t 30', '-y 0', '-p 0', '-c 1'])
 
 def print_solution(sol,depth):
     

@@ -8,12 +8,13 @@ Created on Wed Apr 18 10:12:37 2018
 from RMPSolver import create_new_master
 from BaP_Node import BaP_Node
 import time
+from nodes_external_management import hash_seg
 
 def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
     prob=create_new_master(inputdepth,segments_set)
                 
-    root_node=BaP_Node(segments_set,prob,"",[],[],[],[[] for l in range(len(segments_set))]) #construct root node
+    root_node=BaP_Node(segments_set,prob,"",[],[],[],[[hash_seg(segments_set[l][0])] for l in range(len(segments_set))]) #construct root node
     
     a=time.time()
     
