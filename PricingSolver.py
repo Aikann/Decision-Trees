@@ -174,4 +174,4 @@ def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,prici
                     
         print("Reduced cost for partition : ",str(value))
                                 
-    return segments_to_be_added_ordered, ((min(obj_values) - int(pricing_method>=2)) > -0.01), min(obj_values)
+    return segments_to_be_added_ordered, ((min(obj_values) > -0.01) and (pricing_method==1)), min(obj_values)

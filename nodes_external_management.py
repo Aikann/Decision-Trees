@@ -147,7 +147,7 @@ def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
     """
     #print("Extract seg",seg)
     
-    return seg[::-1]
+    return seg
 
 def give_solution_type(prob): #return a string saying if the solution is integral, continuous or infeasible
     

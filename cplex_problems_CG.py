@@ -271,8 +271,6 @@ def create_rows_CG(depth,segments_set):
         
     big_M = get_max_value() - get_min_value()
     
-    big_M=10*big_M + 10
-    
     constraint_indicators.append(row_value)
     
     for i in range(num_features): #constraint (15), indicator 0
@@ -566,7 +564,7 @@ def create_variables_pricing(depth,master_prob,leaf):
         
         #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
         
-        var_obj.append(master_prob.solution.get_dual_values("constraint17_"+str(r)) + master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
+        var_obj.append(-master_prob.solution.get_dual_values("constraint17_"+str(r)) - master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
 
         var_value = var_value + 1
         
@@ -982,7 +980,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
             
             #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
                                                             
-            var_obj.append(master_prob.solution.get_dual_values("constraint17_"+str(r)) + master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
+            var_obj.append(-master_prob.solution.get_dual_values("constraint17_"+str(r)) - master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
     
             var_value = var_value + 1
         
