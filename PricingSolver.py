@@ -13,7 +13,7 @@ from learn_tree_funcs import get_data_size
 
 
 
-def solve_pricing_given_leaf(depth,prob,leaf,branched_rows,branched_leaves,ID,existing_segments,add_rows_excl=[]): #return a tuple (segments, obj_value).
+def solve_pricing_given_leaf(depth,prob,leaf,branched_rows,branched_leaves,branched_f,ID,existing_segments,add_rows_excl=[]): #return a tuple (segments, obj_value).
     
     rows_to_be_excluded, rows_to_be_included = add_rows_excl, []
     
@@ -41,6 +41,8 @@ def solve_pricing_given_leaf(depth,prob,leaf,branched_rows,branched_leaves,ID,ex
     
     obj_value = obj_value + prob.solution.get_dual_values()[constraint_indicators[3] + leaf]
     
+    #obj_value = obj_value + sum([prob.solution.get_dual_values("branch_f_"+str(i)+"_"+str(j)) for (i,j) in branched_f])
+    
     #print("Bheta "+str(leaf)+" :"+str(prob.solution.get_dual_values()[constraint_indicators[3] + leaf]))
     
     segment = extract_rows_pricing(pricing_prob)
@@ -50,7 +52,7 @@ def solve_pricing_given_leaf(depth,prob,leaf,branched_rows,branched_leaves,ID,ex
 
 
 
-def solve_pricing_all_at_once(depth,prob,branched_rows,branched_leaves,ID,segments_set):
+def solve_pricing_all_at_once(depth,prob,branched_rows,branched_leaves,branched_f,ID,segments_set):
     
     pricing_prob_all_at_once = contruct_pricing_problem_all_at_once(depth,prob,branched_rows,branched_leaves,ID,segments_set)
         
@@ -78,6 +80,10 @@ def solve_pricing_all_at_once(depth,prob,branched_rows,branched_leaves,ID,segmen
     
     obj_value = obj_value + sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))])
     
+    #obj_value = obj_value + sum([prob.solution.get_dual_values("branch_f_"+str(i)+"_"+str(j)) for (i,j) in branched_f])
+    
+    print(sum([prob.solution.get_dual_values("branch_f_"+str(i)+"_"+str(j)) for (i,j) in branched_f]))
+        
     #print("SUM BHETA ",sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))]))
             
     segment = extract_rows_pricing_all_at_once(pricing_prob_all_at_once,len(segments_set))
@@ -88,7 +94,7 @@ def solve_pricing_all_at_once(depth,prob,branched_rows,branched_leaves,ID,segmen
 
 
 
-def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,pricing_method): #return a tuple (segments_to_be_added, convergence)
+def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,branched_f,ID,pricing_method): #return a triple (segments_to_be_added, convergence, min(red_cost))
     
     from BaP_Node import count_iter
     
@@ -100,7 +106,7 @@ def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,prici
     
         for l in range(num_leafs): # TODO ; implement new pricing_method
             
-            segments, value = solve_pricing_given_leaf(depth,prob,l,branched_rows,branched_leaves,ID,segments_set[l])
+            segments, value = solve_pricing_given_leaf(depth,prob,l,branched_rows,branched_leaves,branched_f,ID,segments_set[l])
             
             segments_to_be_added_ordered.append(segments)
             
@@ -160,7 +166,7 @@ def solve_pricing(depth,prob,segments_set,branched_rows,branched_leaves,ID,prici
         
     elif pricing_method==3:
         
-        segments, value = solve_pricing_all_at_once(depth,prob,branched_rows,branched_leaves,ID,segments_set)
+        segments, value = solve_pricing_all_at_once(depth,prob,branched_rows,branched_leaves,branched_f,ID,segments_set)
             
         segments_to_be_added_ordered = segments
         

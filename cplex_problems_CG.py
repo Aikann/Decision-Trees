@@ -8,15 +8,43 @@ Created on Wed Apr 11 15:36:08 2018
 from learn_tree_funcs import get_num_targets, get_left_leafs, get_right_leafs
 from learn_tree_funcs import get_num_features, get_data_size, get_min_value, get_max_value, get_feature_value, get_target
 import cplex
-from cplex.exceptions import CplexError
 
 def obtain_TARGETS(t):
     global TARGETS
     TARGETS=t
     
-def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
+def add_f_constraint(prob,i,j,right_side):
+            
+    new_prob = cplex.Cplex()
     
-    global VARS
+    prob.write("tmp.lp",'lp')
+    
+    new_prob.read("tmp.lp",'lp')
+    
+    col_names = ["node_feature_"+str(j)+"_"+str(i)]
+
+    col_values = [1]
+
+    row_names=["branch_f_" + str(i) + "_" + str(j)]
+
+    row_values=[[col_names,col_values]]
+
+    row_right_sides = [right_side]
+
+    row_senses = "E"
+    
+    new_prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
+    
+    new_prob.set_problem_type(0) #tell cplex this is a LP, not a MILP
+    
+    new_prob.set_log_stream(None)
+    new_prob.set_error_stream(None)
+    new_prob.set_warning_stream(None)
+    new_prob.set_results_stream(None)
+    
+    return new_prob
+
+def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
     
     num_features = get_num_features()
     
@@ -28,13 +56,11 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
                     
     value=prob.variables.get_num()
     
-    var_types, var_lb, var_ub, var_obj = "", [], [], []
+    var_types, var_lb, var_ub, var_obj, var_names = "", [], [], [], []
     
     my_columns = [[[],[]] for leaf in range(num_leafs)]
     
     for leaf in range(num_leafs):
-
-        VARS["segment_leaf_" + str(len(prev_segments_set[leaf])) + "_" + str(leaf)] = value
     
         var_types += "C"
     
@@ -43,6 +69,8 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
         var_ub.append(1)
     
         var_obj.append(0)
+        
+        var_names.append("segment_leaf_" + str(len(prev_segments_set[leaf])) + "_" + str(leaf))
         
         value=value+1
         
@@ -56,7 +84,7 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
         
                 for l in get_left_leafs(j, num_nodes):
 
-                    my_columns[leaf][0].append(row_value)
+                    my_columns[leaf][0].append("constraint_15_" + str(i) + "_" + str(j) + "_" +str(l))
 
                     my_columns[leaf][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
                     
@@ -68,7 +96,7 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
         
                 for l in get_right_leafs(j, num_nodes):
 
-                    my_columns[leaf][0].append(row_value)
+                    my_columns[leaf][0].append("constraint_16_" + str(i) + "_" + str(j) + "_" +str(l))
 
                     my_columns[leaf][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
                     
@@ -78,7 +106,7 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
             
             if r in s:
                 
-                my_columns[leaf][0].append(row_value)
+                my_columns[leaf][0].append("constraint_17_" + str(r))
 
                 my_columns[leaf][1].append(1)
                 
@@ -88,7 +116,7 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
             
             if l==leaf:
                 
-                my_columns[leaf][0].append(row_value)
+                my_columns[leaf][0].append("constraint_18_" + str(l))
 
                 my_columns[leaf][1].append(1)
                 
@@ -102,13 +130,13 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
                     
                     if r in s:
                 
-                        my_columns[leaf][0].append(row_value)
+                        my_columns[leaf][0].append("constraint_19_" + str(r) + "_" +str(l))
 
                         my_columns[leaf][1].append(1)
                 
                 row_value = row_value + 1
                                     
-    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, columns = my_columns)#, names = var_names)
+    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, columns = my_columns, names = var_names)
 
     #row_names, row_values, row_right_sides, row_senses = create_rows_CG(inputdepth,segments_set)
     
@@ -122,10 +150,6 @@ def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,s
 
 def create_variables_CG(depth,segments_set):
     
-    global VARS
-
-    VARS={}
-
     var_value = 0
 
     var_names = []
@@ -152,9 +176,7 @@ def create_variables_CG(depth,segments_set):
 
         for i in range(num_features):
 
-            VARS["node_feature_" + str(j) + "_" + str(i)] = var_value
-
-            var_names.append("#" + str(var_value))
+            var_names.append("node_feature_" + str(j) + "_" + str(i))
 
             var_types = var_types + "C"
 
@@ -170,9 +192,7 @@ def create_variables_CG(depth,segments_set):
 
     for j in range(num_nodes):
 
-        VARS["node_constant_" + str(j)] = var_value
-
-        var_names.append("#" + str(var_value))
+        var_names.append("node_constant_" + str(j))
 
         var_types = var_types + "C"
 
@@ -190,9 +210,7 @@ def create_variables_CG(depth,segments_set):
 
         for t in range(get_num_targets()):
 
-            VARS["prediction_type_" + str(t) + "_" + str(l)] = var_value
-
-            var_names.append("#" + str(var_value))
+            var_names.append("prediction_type_" + str(t) + "_" + str(l))
 
             var_types = var_types + "C"
 
@@ -208,9 +226,7 @@ def create_variables_CG(depth,segments_set):
 
     for r in range(data_size):
 
-        VARS["row_error_" + str(r)] = var_value
-
-        var_names.append("#" + str(var_value))
+        var_names.append("row_error_" + str(r))
 
         var_types = var_types + "C"
 
@@ -226,9 +242,7 @@ def create_variables_CG(depth,segments_set):
     
         for s in range(len(segments_set[l])): 
         
-            VARS["segment_leaf_" + str(s) + "_" + str(l)] = var_value
-
-            var_names.append("#" + str(var_value))
+            var_names.append("segment_leaf_" + str(s) + "_" + str(l))
 
             var_types = var_types + "C"
 
@@ -240,12 +254,11 @@ def create_variables_CG(depth,segments_set):
 
             var_value = var_value + 1
 
-    return VARS, var_names, var_types, var_lb, var_ub, var_obj
+    return var_names, var_types, var_lb, var_ub, var_obj
 
 
 def create_rows_CG(depth,segments_set):
 
-    global VARS
     global TARGETS
     global constraint_indicators
     
@@ -279,15 +292,15 @@ def create_rows_CG(depth,segments_set):
             
             for l in get_left_leafs(j, num_nodes):
 
-                col_names = [VARS["segment_leaf_"  + str(s) + "_" + str(l)] for s in range(len(segments_set[l]))] #x_{l,s}
+                col_names = ["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l]))] #x_{l,s}
 
                 col_values = [max([get_feature_value(r,i) for r in s]) for s in segments_set[l]] #mu^{i,s} max
 
-                col_names.extend([VARS["node_feature_" + str(j) + "_" + str(i)], VARS["node_constant_" + str(j)]])
+                col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
                 col_values.extend([big_M, -1])
 
-                row_names.append("constraint15_" + str(i) + "_" + str(j) + "_" +str(l))
+                row_names.append("constraint_15_" + str(i) + "_" + str(j) + "_" +str(l))
         
                 row_values.append([col_names,col_values])
         
@@ -305,15 +318,15 @@ def create_rows_CG(depth,segments_set):
             
             for l in get_right_leafs(j, num_nodes):
 
-                col_names = [VARS["segment_leaf_"  + str(s) + "_" + str(l)] for s in range(len(segments_set[l]))] #x_{l,s}
+                col_names = ["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l]))] #x_{l,s}
 
                 col_values = [-min([get_feature_value(r,i) for r in s]) for s in segments_set[l]] #mu^{i,s} min
 
-                col_names.extend([VARS["node_feature_" + str(j) + "_" + str(i)], VARS["node_constant_" + str(j)]])
+                col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
                 col_values.extend([big_M, 1])
 
-                row_names.append("constraint16_" + str(i) + "_" + str(j) + "_" +str(l))
+                row_names.append("constraint_16_" + str(i) + "_" + str(j) + "_" +str(l))
         
                 row_values.append([col_names,col_values])
         
@@ -335,11 +348,11 @@ def create_rows_CG(depth,segments_set):
                 
                 if r in segments_set[l][s]:
         
-                    col_names.extend([VARS["segment_leaf_"  + str(s) + "_" + str(l)]]) #x_{l,s}
+                    col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l)]) #x_{l,s}
                     
                     col_values.extend([1])
                     
-        row_names.append("constraint17_" + str(r))
+        row_names.append("constraint_17_" + str(r))
                 
         row_values.append([col_names,col_values])
 
@@ -353,11 +366,11 @@ def create_rows_CG(depth,segments_set):
         
     for l in range(num_leafs): #constraint (18), indicator 3
         
-        col_names = [VARS["segment_leaf_"  + str(s) + "_" + str(l)] for s in range(len(segments_set[l]))] #x_{l,s}
+        col_names = ["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l]))] #x_{l,s}
         
         col_values = [1 for s in range(len(segments_set[l]))] #x_{l,s}
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_18_" + str(l))
         
         row_values.append([col_names,col_values])
 
@@ -379,7 +392,7 @@ def create_rows_CG(depth,segments_set):
                 
                 if r in segments_set[l][s]:
             
-                    col_names.extend([VARS["segment_leaf_"  + str(s) + "_" + str(l)]]) #x_{l,s}
+                    col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l)]) #x_{l,s}
                     
                     col_values.extend([1])
                     
@@ -387,15 +400,15 @@ def create_rows_CG(depth,segments_set):
                 
                 if TARGETS[t] != get_target(r):
 
-                    col_names.extend([VARS["prediction_type_" + str(t) + "_" + str(l)]])
+                    col_names.extend(["prediction_type_" + str(t) + "_" + str(l)])
 
                     col_values.extend([1])
 
-            col_names.extend([VARS["row_error_" + str(r)]])
+            col_names.extend(["row_error_" + str(r)])
 
             col_values.extend([-1])
             
-            row_names.append("constraint19_" + str(r) + "_" +str(l))
+            row_names.append("constraint_19_" + str(r) + "_" +str(l))
         
             row_values.append([col_names,col_values])
     
@@ -409,11 +422,11 @@ def create_rows_CG(depth,segments_set):
             
     for l in range(num_leafs): #constraint (20), indicator 5
 
-        col_names = [VARS["prediction_type_" + str(s) + "_" + str(l)] for s in range(get_num_targets())]
+        col_names = ["prediction_type_" + str(s) + "_" + str(l) for s in range(get_num_targets())]
 
         col_values = [1 for s in range(get_num_targets())]
 
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_20_"+str(l))
 
         row_values.append([col_names,col_values])
 
@@ -427,11 +440,11 @@ def create_rows_CG(depth,segments_set):
 
     for j in range(num_nodes): #constraint (21), indicator 6
 
-        col_names = [VARS["node_feature_" + str(j) + "_" + str(i)] for i in range(num_features)]
+        col_names = ["node_feature_" + str(j) + "_" + str(i) for i in range(num_features)]
 
         col_values = [1 for i in range(num_features)]
 
-        row_names.append("#"+str(row_value))
+        row_names.append("constraint_21_"+str(j))
 
         row_values.append([col_names,col_values])
 
@@ -446,44 +459,31 @@ def create_rows_CG(depth,segments_set):
 
 def construct_master_problem(depth,segments_set):
     
-    global VARS
     global TARGETS
     
     prob = cplex.Cplex()
     
-    try:
+    prob.objective.set_sense(prob.objective.sense.minimize)
 
-        prob.objective.set_sense(prob.objective.sense.minimize)
+    var_names, var_types, var_lb, var_ub, var_obj = create_variables_CG(depth,segments_set)
+    
+    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, names = var_names)
 
-        VARS, var_names, var_types, var_lb, var_ub, var_obj = create_variables_CG(depth,segments_set)
-        
-        prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
-
-        row_names, row_values, row_right_sides, row_senses = create_rows_CG(depth,segments_set)
-        
-        prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
-                
-        prob.set_problem_type(0) #tell cplex this is a LP, not a MILP
-        
-        prob.set_log_stream(None)
-        prob.set_error_stream(None)
-        prob.set_warning_stream(None)
-        prob.set_results_stream(None)
-        
-    except CplexError, exc:
-
-        print exc
-
-        return []
+    row_names, row_values, row_right_sides, row_senses = create_rows_CG(depth,segments_set)
+    
+    prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
+            
+    prob.set_problem_type(0) #tell cplex this is a LP, not a MILP
+    
+    prob.set_log_stream(None)
+    prob.set_error_stream(None)
+    prob.set_warning_stream(None)
+    prob.set_results_stream(None)
     
     return prob
 
 def create_variables_pricing(depth,master_prob,leaf):
     
-    global VARS2
-
-    VARS2={}
-
     var_value = 0
 
     var_names = []
@@ -518,15 +518,15 @@ def create_variables_pricing(depth,master_prob,leaf):
             
             if leaf in left_leaves:
                                 
-                s = s + master_prob.solution.get_dual_values("constraint15_"+str(i)+"_"+str(j)+"_"+str(leaf))
+                s = s + master_prob.solution.get_dual_values("constraint_15_"+str(i)+"_"+str(j)+"_"+str(leaf))
                 
             #print(s)
             
-            if s<0:
+            if s>0:
                 
-                input()
+                input("STOP B")
                 
-        A_i_l.append(-s)
+        B_i_l.append(-s)
     
     for i in range(num_features):
         
@@ -538,23 +538,21 @@ def create_variables_pricing(depth,master_prob,leaf):
             
             if leaf in right_leaves:
                                 
-                s = s + master_prob.solution.get_dual_values("constraint16_"+str(i)+"_"+str(j)+"_"+str(leaf))
+                s = s + master_prob.solution.get_dual_values("constraint_16_"+str(i)+"_"+str(j)+"_"+str(leaf))
                 
             #print(s)
             
-            if s<0:
+            if s>0:
                 
-                input()
+                input("STOP A")
                 
-        B_i_l.append(s)
+        A_i_l.append(-s)
 
     # z_{r}, main decision variables
 
     for r in range(data_size):
 
-        VARS2["row_" + str(r)] = var_value
-
-        var_names.append("#" + str(var_value))
+        var_names.append("row_" + str(r))
 
         var_types = var_types + "B"
 
@@ -564,7 +562,7 @@ def create_variables_pricing(depth,master_prob,leaf):
         
         #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
         
-        var_obj.append(-master_prob.solution.get_dual_values("constraint17_"+str(r)) - master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
+        var_obj.append(-master_prob.solution.get_dual_values("constraint_17_"+str(r)) - master_prob.solution.get_dual_values("constraint_19_"+str(r)+"_"+str(leaf)))
 
         var_value = var_value + 1
         
@@ -573,30 +571,8 @@ def create_variables_pricing(depth,master_prob,leaf):
     for i in range(num_features):
         
         for r in range(data_size):
-
-            VARS2["kappa_" + str(r) + "_" + str(i)] = var_value
         
-            var_names.append("#" + str(var_value))
-        
-            var_types = var_types + "B"
-        
-            var_lb.append(0)
-        
-            var_ub.append(1)
-        
-            var_obj.append(-B_i_l[i]*get_feature_value(r,i))
-        
-            var_value = var_value + 1
-        
-    # omega_{i,r}, indicate the max feature of row r
-    
-    for i in range(num_features):
-        
-        for r in range(data_size):
-
-            VARS2["omega_" + str(r) + "_" + str(i)] = var_value
-        
-            var_names.append("#" + str(var_value))
+            var_names.append("kappa_" + str(r) + "_" + str(i))
         
             var_types = var_types + "B"
         
@@ -607,8 +583,26 @@ def create_variables_pricing(depth,master_prob,leaf):
             var_obj.append(A_i_l[i]*get_feature_value(r,i))
         
             var_value = var_value + 1
+        
+    # omega_{i,r}, indicate the max feature of row r
+    
+    for i in range(num_features):
+        
+        for r in range(data_size):
+        
+            var_names.append("omega_" + str(r) + "_" + str(i))
+        
+            var_types = var_types + "B"
+        
+            var_lb.append(0)
+        
+            var_ub.append(1)
+        
+            var_obj.append(-B_i_l[i]*get_feature_value(r,i))
+        
+            var_value = var_value + 1
             
-    return VARS2, var_names, var_types, var_lb, var_ub, var_obj
+    return var_names, var_types, var_lb, var_ub, var_obj
             
             
 def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
@@ -631,7 +625,7 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
         for i in range(num_features):
 
-            col_names = [VARS2["kappa_"  + str(r) + "_" + str(i)]]
+            col_names = ["kappa_"  + str(r) + "_" + str(i)]
     
             col_values = [1]
             
@@ -639,11 +633,11 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
                 
                 if get_feature_value(r2,i) < get_feature_value(r,i):
                     
-                    col_names.extend([VARS2["row_" + str(r2)]])
+                    col_names.extend(["row_" + str(r2)])
                     
                     col_values.extend([1./data_size])
     
-            row_names.append("#" + str(row_value))
+            row_names.append("contraint_32_" + str(r) + "_" +str(i))
     
             row_values.append([col_names,col_values])
     
@@ -657,7 +651,7 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
         for i in range(num_features):
             
-            col_names = [VARS2["omega_"  + str(r) + "_" + str(i)]]
+            col_names = ["omega_"  + str(r) + "_" + str(i)]
     
             col_values = [1]
             
@@ -665,11 +659,11 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
                 
                 if get_feature_value(r2,i) > get_feature_value(r,i):
                     
-                    col_names.extend([VARS2["row_" + str(r2)]])
+                    col_names.extend(["row_" + str(r2)])
                     
                     col_values.extend([1./data_size])
     
-            row_names.append("#" + str(row_value))
+            row_names.append("contraint_33_" + str(r) + "_" +str(i))
     
             row_values.append([col_names,col_values])
     
@@ -681,15 +675,15 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
     for r in range(data_size): #constraint (34)
         
-        col_names = [VARS2["kappa_"  + str(r) + "_" + str(i)] for i in range(num_features)]
+        col_names = ["kappa_"  + str(r) + "_" + str(i) for i in range(num_features)]
         
         col_values = [1 for i in range(num_features)]
         
-        col_names.extend([VARS2["row_"+str(r)]])
+        col_names.extend(["row_"+str(r)])
         
         col_values.extend([-num_features])
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_34_"+str(r))
 
         row_values.append([col_names,col_values])
 
@@ -701,15 +695,15 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
     for r in range(data_size): #constraint (35)
         
-        col_names = [VARS2["omega_"  + str(r) + "_" + str(i)] for i in range(num_features)]
+        col_names = ["omega_"  + str(r) + "_" + str(i) for i in range(num_features)]
         
         col_values = [1 for i in range(num_features)]
         
-        col_names.extend([VARS2["row_"+str(r)]])
+        col_names.extend(["row_"+str(r)])
         
         col_values.extend([-num_features])
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_35_"+str(r))
 
         row_values.append([col_names,col_values])
 
@@ -721,11 +715,11 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
     for i in range(num_features): #constraint (36)
         
-        col_names = [VARS2["kappa_"  + str(r) + "_" + str(i)] for r in range(data_size)]
+        col_names = ["kappa_"  + str(r) + "_" + str(i) for r in range(data_size)]
         
         col_values = [1 for r in range(data_size)]
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_36_"+str(i))
 
         row_values.append([col_names,col_values])
 
@@ -738,11 +732,11 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
     for i in range(num_features): #constraint (37)
         
-        col_names = [VARS2["omega_"  + str(r) + "_" + str(i)] for r in range(data_size)]
+        col_names = ["omega_"  + str(r) + "_" + str(i) for r in range(data_size)]
         
         col_values = [1 for r in range(data_size)]
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_37_"+str(i))
 
         row_values.append([col_names,col_values])
 
@@ -754,11 +748,11 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         
     # constraint to prevent the generated segment to be the entire set
     
-    col_names = [VARS2["row_"+str(r)] for r in range(data_size)]
+    col_names = ["row_"+str(r) for r in range(data_size)]
     
     col_values = [1 for r in range(data_size)]
     
-    row_names.append("#" + str(row_value))
+    row_names.append("constraint_entire_set")
 
     row_values.append([col_names,col_values])
 
@@ -804,11 +798,11 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
     
     if len(exc_rows) > 0:
         
-        col_names = [VARS2["row_"  + str(r)] for r in exc_rows]
+        col_names = ["row_"  + str(r) for r in exc_rows]
         
         col_values = [1 for r in exc_rows]
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_branching_0")
     
         row_values.append([col_names,col_values])
     
@@ -822,11 +816,11 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
     
     if len(incl_rows) > 0:
     
-        col_names = [VARS2["row_"  + str(r)] for r in incl_rows]
+        col_names = ["row_"  + str(r) for r in incl_rows]
         
         col_values = [1 for r in exc_rows]
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_branching_1")
     
         row_values.append([col_names,col_values])
     
@@ -836,24 +830,20 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
     
         row_value = row_value + 1
         
-        
-        
     return row_names, row_values, row_right_sides, row_senses
     
 
 def construct_pricing_problem(depth,master_prob,exc_rows,incl_rows,leaf,existing_segments):
     
-    global VARS
     global TARGETS
-    global VARS2
     
     prob = cplex.Cplex()
     
     prob.objective.set_sense(prob.objective.sense.minimize)
 
-    VARS2, var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing(depth,master_prob,leaf)
+    var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing(depth,master_prob,leaf)
                     
-    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
+    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, names = var_names)
 
     row_names, row_values, row_right_sides, row_senses = create_rows_pricing(depth,exc_rows,incl_rows,existing_segments)
     
@@ -882,11 +872,7 @@ def construct_pricing_problem(depth,master_prob,exc_rows,incl_rows,leaf,existing
     return prob
 
 def create_variables_pricing_all_at_once(depth,master_prob):
-    
-    global VARS3
-    
-    VARS3={}
-
+        
     var_value = 0
 
     var_names = []
@@ -923,17 +909,17 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                 
                 if leaf in left_leaves:
                                         
-                    s = s + master_prob.solution.get_dual_values("constraint15_"+str(i)+"_"+str(j)+"_"+str(leaf))
+                    s = s + master_prob.solution.get_dual_values("constraint_15_"+str(i)+"_"+str(j)+"_"+str(leaf))
                                         
                 #print(s)
                 
-                if s<0:
+                if s>0:
                     
                     print(s)
                     
-                    input("STOP A")
+                    input("STOP B")
                     
-            A_i_l[leaf].append(-s)
+            B_i_l[leaf].append(-s)
         
         for i in range(num_features):
             
@@ -945,17 +931,17 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                 
                 if leaf in right_leaves:
                     
-                    s = s + master_prob.solution.get_dual_values("constraint16_"+str(i)+"_"+str(j)+"_"+str(leaf))
+                    s = s + master_prob.solution.get_dual_values("constraint_16_"+str(i)+"_"+str(j)+"_"+str(leaf))
                                         
                 #print(s)
                 
-                if s<0:
+                if s>0:
                     
                     print(s)
                     
-                    input("STOP B")
+                    input("STOP A")
                     
-            B_i_l[leaf].append(-s)
+            A_i_l[leaf].append(-s)
 
     print("SUM DUALS :",A_i_l," ",B_i_l)
     # z_{r,l}, main decision variables
@@ -967,10 +953,8 @@ def create_variables_pricing_all_at_once(depth,master_prob):
         #print("SUM1",sum([duals[constraint_indicators[2] + r3] + duals[constraint_indicators[4] + r3*num_leafs + 1] for r3 in [2, 3, 5, 6, 7, 9, 10, 12, 13, 14, 20, 22, 25, 26]])+duals[constraint_indicators[3]+1])
 
         for r in range(data_size):
-    
-            VARS3["row_" + str(leaf) + "_" + str(r)] = var_value
-    
-            var_names.append("#" + str(var_value))
+        
+            var_names.append("row_" + str(leaf) + "_" + str(r))
     
             var_types = var_types + "B"
     
@@ -980,7 +964,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
             
             #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
                                                             
-            var_obj.append(-master_prob.solution.get_dual_values("constraint17_"+str(r)) - master_prob.solution.get_dual_values("constraint19_"+str(r)+"_"+str(leaf)))
+            var_obj.append(-master_prob.solution.get_dual_values("constraint_17_"+str(r)) - master_prob.solution.get_dual_values("constraint_19_"+str(r)+"_"+str(leaf)))
     
             var_value = var_value + 1
         
@@ -991,32 +975,8 @@ def create_variables_pricing_all_at_once(depth,master_prob):
         for i in range(num_features):
             
             for r in range(data_size):
-    
-                VARS3["kappa_" +str(leaf) + "_" + str(r) + "_" + str(i)] = var_value
-            
-                var_names.append("#" + str(var_value))
-            
-                var_types = var_types + "B"
-            
-                var_lb.append(0)
-            
-                var_ub.append(1)
-            
-                var_obj.append(-B_i_l[leaf][i]*get_feature_value(r,i))
-            
-                var_value = var_value + 1
-        
-    # omega_{i,r,l}, indicate the max feature of row r
-    
-    for leaf in range(num_leafs):
-    
-        for i in range(num_features):
-            
-            for r in range(data_size):
-    
-                VARS3["omega_" + str(leaf) + "_" + str(r) + "_" + str(i)] = var_value
-            
-                var_names.append("#" + str(var_value))
+                
+                var_names.append("kappa_" +str(leaf) + "_" + str(r) + "_" + str(i))
             
                 var_types = var_types + "B"
             
@@ -1027,8 +987,28 @@ def create_variables_pricing_all_at_once(depth,master_prob):
                 var_obj.append(A_i_l[leaf][i]*get_feature_value(r,i))
             
                 var_value = var_value + 1
+        
+    # omega_{i,r,l}, indicate the max feature of row r
+    
+    for leaf in range(num_leafs):
+    
+        for i in range(num_features):
             
-    return VARS3, var_names, var_types, var_lb, var_ub, var_obj
+            for r in range(data_size):
+                
+                var_names.append("omega_" + str(leaf) + "_" + str(r) + "_" + str(i))
+            
+                var_types = var_types + "B"
+            
+                var_lb.append(0)
+            
+                var_ub.append(1)
+            
+                var_obj.append(-B_i_l[leaf][i]*get_feature_value(r,i))
+            
+                var_value = var_value + 1
+            
+    return var_names, var_types, var_lb, var_ub, var_obj
 
 
 
@@ -1056,7 +1036,7 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
             
             for i in range(num_features):
     
-                col_names = [VARS3["kappa_" + str(l) + "_"  + str(r) + "_" + str(i)]]
+                col_names = ["kappa_" + str(l) + "_"  + str(r) + "_" + str(i)]
         
                 col_values = [1]
                 
@@ -1064,11 +1044,11 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
                     
                     if get_feature_value(r2,i) < get_feature_value(r,i):
                         
-                        col_names.extend([VARS3["row_" +str(l) + "_" + str(r2)]])
+                        col_names.extend(["row_" +str(l) + "_" + str(r2)])
                         
                         col_values.extend([1./data_size])
         
-                row_names.append("#" + str(row_value))
+                row_names.append("constraint_32_"+str(l)+"_"+str(r)+"_"+str(i))
         
                 row_values.append([col_names,col_values])
         
@@ -1077,6 +1057,7 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
                 row_senses = row_senses + "L"
         
                 row_value = row_value + 1
+    
             
     for l in range(num_leafs):
      
@@ -1084,7 +1065,7 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
             
             for i in range(num_features):
                 
-                col_names = [VARS3["omega_" + str(l) + "_" + str(r) + "_" + str(i)]]
+                col_names = ["omega_" + str(l) + "_" + str(r) + "_" + str(i)]
         
                 col_values = [1]
                 
@@ -1092,11 +1073,11 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
                     
                     if get_feature_value(r2,i) > get_feature_value(r,i):
                         
-                        col_names.extend([VARS3["row_" + str(l) + "_" + str(r2)]])
+                        col_names.extend(["row_" + str(l) + "_" + str(r2)])
                         
                         col_values.extend([1./data_size])
         
-                row_names.append("#" + str(row_value))
+                row_names.append("constraint_33_"+str(l)+"_"+str(r)+"_"+str(i))
         
                 row_values.append([col_names,col_values])
         
@@ -1110,15 +1091,15 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
         
         for r in range(data_size): #constraint (34)
             
-            col_names = [VARS3["kappa_" + str(l) + "_"  + str(r) + "_" + str(i)] for i in range(num_features)]
+            col_names = ["kappa_" + str(l) + "_"  + str(r) + "_" + str(i) for i in range(num_features)]
             
             col_values = [1 for i in range(num_features)]
             
-            col_names.extend([VARS3["row_" + str(l) + "_" + str(r)]])
+            col_names.extend(["row_" + str(l) + "_" + str(r)])
             
             col_values.extend([-num_features])
             
-            row_names.append("#" + str(row_value))
+            row_names.append("constraint_34_"+str(l)+"_"+str(r))
     
             row_values.append([col_names,col_values])
     
@@ -1132,15 +1113,15 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
         
         for r in range(data_size): #constraint (35)
             
-            col_names = [VARS3["omega_" + str(l) + "_" + str(r) + "_" + str(i)] for i in range(num_features)]
+            col_names = ["omega_" + str(l) + "_" + str(r) + "_" + str(i) for i in range(num_features)]
             
             col_values = [1 for i in range(num_features)]
             
-            col_names.extend([VARS3["row_" + str(l) + "_" + str(r)]])
+            col_names.extend(["row_" + str(l) + "_" + str(r)])
             
             col_values.extend([-num_features])
             
-            row_names.append("#" + str(row_value))
+            row_names.append("constraint_35_"+str(l)+"_"+str(r))
     
             row_values.append([col_names,col_values])
     
@@ -1154,11 +1135,11 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
         
         for i in range(num_features): #constraint (36)
             
-            col_names = [VARS3["kappa_" + str(l) + "_" + str(r) + "_" + str(i)] for r in range(data_size)]
+            col_names = ["kappa_" + str(l) + "_" + str(r) + "_" + str(i) for r in range(data_size)]
             
             col_values = [1 for r in range(data_size)]
             
-            row_names.append("#" + str(row_value))
+            row_names.append("constraint_36_"+str(l)+"_"+str(i))
     
             row_values.append([col_names,col_values])
     
@@ -1172,11 +1153,11 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
         
         for i in range(num_features): #constraint (37)
             
-            col_names = [VARS3["omega_" + str(l) + "_" + str(r) + "_" + str(i)] for r in range(data_size)]
+            col_names = ["omega_" + str(l) + "_" + str(r) + "_" + str(i) for r in range(data_size)]
             
             col_values = [1 for r in range(data_size)]
             
-            row_names.append("#" + str(row_value))
+            row_names.append("constraint_37_"+str(l)+"_"+str(i))
     
             row_values.append([col_names,col_values])
     
@@ -1188,11 +1169,11 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
             
     for r in range(data_size): #new contraint for "all at once" pricing problem
         
-        col_names = [VARS3["row_" + str(l) + "_" + str(r)] for l in range(num_leafs)]
+        col_names = ["row_" + str(l) + "_" + str(r) for l in range(num_leafs)]
         
         col_values = [1 for l in range(num_leafs)]
         
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_partition_"+str(r))
     
         row_values.append([col_names,col_values])
 
@@ -1268,16 +1249,15 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,exist
 
 def contruct_pricing_problem_all_at_once(depth,master_prob,branched_rows,branched_leaves,ID,existing_segments):
     
-    global VARS3
     global TARGETS
     
     prob = cplex.Cplex()
 
     prob.objective.set_sense(prob.objective.sense.minimize)
 
-    VARS3, var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing_all_at_once(depth,master_prob)
+    var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing_all_at_once(depth,master_prob)
             
-    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types)#, names = var_names)
+    prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, names = var_names)
 
     row_names, row_values, row_right_sides, row_senses = create_rows_pricing_all_at_once(depth,branched_rows,branched_leaves,ID,existing_segments)
     

@@ -88,16 +88,14 @@ def extract_rows_pricing(pricing_prob): #return the segment given by the pricing
     return seg
 
 def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
-    
-    from cplex_problems_CG import VARS3
-    
-    seg, sol, datasize = [[] for l in range(num_leafs)], pricing_prob_all_at_once.solution.get_values(), get_data_size()
+        
+    seg, datasize = [[] for l in range(num_leafs)], get_data_size()
     
     for l in range(num_leafs):
     
         for r in range(datasize):
             
-            if 0.99 <= sol[VARS3["row_" + str(l) + "_" + str(r)]] <= 1.01:
+            if 0.99 <= pricing_prob_all_at_once.solution.get_values("row_" + str(l) + "_" + str(r)) <= 1.01:
                 
                 seg[l].append(r)
                 
@@ -110,7 +108,7 @@ def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
                         
             for r in range(datasize):
                                 
-                if pricing_prob_all_at_once.solution.get_values(VARS3["kappa_" + str(l) + "_"  + str(r) + "_" + str(i)])==1:
+                if pricing_prob_all_at_once.solution.get_values("kappa_" + str(l) + "_"  + str(r) + "_" + str(i))==1:
                     
                     #print(l,r,i,r in seg[l])
                     
@@ -118,7 +116,7 @@ def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
             
                     assert min([get_feature_value(r2,i) for r2 in seg[l]]) == get_feature_value(r,i)
                     
-                if pricing_prob_all_at_once.solution.get_values(VARS3["omega_" + str(l) + "_"  + str(r) + "_" + str(i)])==1:
+                if pricing_prob_all_at_once.solution.get_values("omega_" + str(l) + "_"  + str(r) + "_" + str(i))==1:
                     
                     #print(l,r,i,r in seg[l])
                     

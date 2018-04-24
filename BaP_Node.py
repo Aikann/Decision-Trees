@@ -5,13 +5,13 @@ Created on Tue Apr 10 13:44:53 2018
 @author: Guillaume
 """
 
-from RMPSolver import add_column, solveRMP, display_RMP_solution_dual, display_RMP_solution_primal, create_new_master
+from RMPSolver import add_column, solveRMP, display_RMP_solution_dual, display_RMP_solution_primal, create_new_master, RMP_add_f_constraint
 from nodes_external_management import give_solution_type, check_unicity, adapt_segments_set, hash_seg
 
 from PricingSolver import solve_pricing
 import time
 import matplotlib.pyplot as plt
-import copy
+from copy import deepcopy as dc
 
 
 def obtain_depth2(d):
@@ -22,7 +22,7 @@ def obtain_depth2(d):
 
 class BaP_Node:
     
-    def __init__(self,segments_set,prob,ID,parent,branched_rows,branched_leaves,H):
+    def __init__(self,segments_set,prob,ID,parent,branched_rows,branched_leaves,H,branched_f):
         
         self.prob=prob #cplex problem
         self.segments_set=segments_set #list containing lists of sets for each leaf
@@ -31,6 +31,7 @@ class BaP_Node:
         self.branched_rows = branched_rows #list of branched rows
         self.branched_leaves = branched_leaves #list of corresponding leaves
         self.H = H #hash table for segments
+        self.branched_f = branched_f
         
     def explore(self): #do CG until the master problem is solved
         
@@ -41,6 +42,19 @@ class BaP_Node:
         #print(self.segments_set)
                 
         convergence = False
+        
+        solveRMP(self.prob)
+        
+        display_RMP_solution_dual(depth,self.prob,0)
+        
+        display_RMP_solution_primal(depth,self.prob,0,self.segments_set)
+        
+        if give_solution_type(self.prob) == 'infeasible':
+            
+            self.solution_type = 'infeasible'
+            self.solution_value = float('+inf')
+            
+            return
         
         global count_iter
         
@@ -69,6 +83,8 @@ class BaP_Node:
             solveRMP(self.prob)
             
             #display_RMP_solution_primal(depth,self.prob,count_iter,self.segments_set)
+            
+            #display_RMP_solution_dual(depth,self.prob,count_iter)
             
             print(count_iter,"Time MP :",time.time()-c)
             
@@ -104,7 +120,9 @@ class BaP_Node:
             
             b=time.time()
                         
-            segments_to_be_added, convergence, red_cost = solve_pricing(depth,self.prob,self.segments_set,self.branched_rows,self.branched_leaves,self.ID,pricing_method)
+            segments_to_be_added, convergence, red_cost = solve_pricing(depth,
+            self.prob,self.segments_set,self.branched_rows,self.branched_leaves,
+            self.branched_f,self.ID,pricing_method)
             
             print(count_iter,"Time pricing :",time.time()-b)
             
@@ -119,7 +137,7 @@ class BaP_Node:
                 print("Number of segments "+str(sum([len(self.segments_set[l]) for l in range(len(self.segments_set))])))
                 
                 #check_unicity(self.segments_set)
-                                
+                                                       
                 #input()
                                 
                 time.sleep(0.1)
@@ -130,13 +148,13 @@ class BaP_Node:
             
             #print("seg to be added",segments_to_be_added)
             
-            previous_seg_set = copy.deepcopy(self.segments_set)
-            
-            self.add_segments(segments_to_be_added,True)
+            previous_seg_set = dc(self.segments_set)
             
             #print("Full set after addition",self.segments_set)
                         
             if not convergence:
+                
+                self.add_segments(segments_to_be_added,True)
                                                     
                 self.prob = add_column(depth,self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
                 
@@ -183,6 +201,26 @@ class BaP_Node:
                     self.segments_set[l].append(segs_to_add[l])
                                             
                     self.H[l].append(hash_seg(segs_to_add[l]))
+                    
+    def create_children_by_branching_on_f(self,i,j):
+                
+        child1_prob = RMP_add_f_constraint(self.prob,i,j,1)
+                
+        child1_branch_f = dc(self.branched_f)
+        
+        child1_branch_f.append((i,j))
+        
+        self.child1 = BaP_Node(dc(self.segments_set),child1_prob,self.ID+"1",self,dc(self.branched_rows),dc(self.branched_leaves),dc(self.H),child1_branch_f)
+                
+        child0_prob = RMP_add_f_constraint(self.prob,i,j,0)
+        
+        child0_branch_f = dc(self.branched_f)
+        
+        child0_branch_f.append((i,j))
+        
+        self.child0 = BaP_Node(dc(self.segments_set),child0_prob,self.ID+"0",self,dc(self.branched_rows),dc(self.branched_leaves),dc(self.H),child0_branch_f)
+        
+        return
                     
     """ NOT FULLY IMPLEMENTED
             
