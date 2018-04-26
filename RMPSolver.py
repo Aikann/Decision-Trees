@@ -130,3 +130,17 @@ def display_RMP_solution_primal(depth,prob,CGiter,segments_set):
     print("Objective value :",round(prob.solution.get_objective_value(),2))
 
     print("--------------------- RMP("+str(CGiter)+") Solution ---------------------");
+    
+def display_prob_lite(prob,side):
+    
+    if side == "primal":
+        
+        for i in prob.variables.get_names():
+            
+            print(i, prob.solution.get_values(i))
+            
+    else:
+        
+        for i in prob.linear_constraints.get_names():
+            
+            print(i, prob.solution.get_dual_values(i))

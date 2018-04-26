@@ -399,7 +399,7 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_s
     
         row_values.append([col_names,col_values])
         
-        if ID[k]==0:
+        if ID[k]=="0":
     
             row_right_sides.append(0)
             

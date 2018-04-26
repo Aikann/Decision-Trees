@@ -330,7 +330,7 @@ def create_rows_CG(depth,segments_set):
         
                 row_values.append([col_names,col_values])
         
-                row_right_sides.append(big_M)
+                row_right_sides.append(big_M + 0.01)
         
                 row_senses = row_senses + "L"
         

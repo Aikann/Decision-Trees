@@ -7,6 +7,8 @@ Created on Wed Apr 18 11:08:04 2018
 
 from cplex_problems_indiv_pricing import construct_pricing_problem
 from cplex_problems_all_at_once_pricing import contruct_pricing_problem_all_at_once
+from cplex_problems_all_at_once_pricing2 import contruct_pricing_problem_all_at_once2
+from cplex_problems_indiv_pricing2 import construct_pricing_problem2
 from nodes_external_management import extract_rows_pricing, extract_rows_pricing_all_at_once, color_leaf
 import matplotlib.pyplot as plt
 from random import shuffle
@@ -32,7 +34,7 @@ def solve_pricing_given_leaf(depth,prob,leaf,branched_rows,branched_f,ID,existin
                 
     #input()
                     
-    pricing_prob = construct_pricing_problem(depth,prob,rows_to_be_excluded,rows_to_be_included,leaf,existing_segments)
+    pricing_prob = construct_pricing_problem2(depth,prob,rows_to_be_excluded,rows_to_be_included,leaf,existing_segments)
             
     pricing_prob.solve()
         
@@ -53,7 +55,7 @@ def solve_pricing_given_leaf(depth,prob,leaf,branched_rows,branched_f,ID,existin
 
 def solve_pricing_all_at_once(depth,prob,branched_rows,branched_f,ID,segments_set):
     
-    pricing_prob_all_at_once = contruct_pricing_problem_all_at_once(depth,prob,branched_rows,branched_f,ID,segments_set)
+    pricing_prob_all_at_once = contruct_pricing_problem_all_at_once2(depth,prob,branched_rows,branched_f,ID,segments_set)
         
     pricing_prob_all_at_once.solve()
             

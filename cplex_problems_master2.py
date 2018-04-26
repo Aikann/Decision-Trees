@@ -27,6 +27,8 @@ def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,
     
     var_types, var_lb, var_ub, var_obj, var_names = "", [], [], [], []
     
+    big_M = get_max_value() - get_min_value()
+    
     my_columns = [[[],[]] for leaf in range(num_leafs)]
     
     for leaf in range(num_leafs):
@@ -57,7 +59,7 @@ def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,
 
                         my_columns[leaf][0].append("constraint_15_" + str(i) + "_" + str(j) + "_" +str(r))
     
-                        my_columns[leaf][1].append(get_feature_value(r,i))
+                        my_columns[leaf][1].append(big_M)
                         
                         row_value = row_value + 1
                     
@@ -71,7 +73,7 @@ def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,
 
                         my_columns[leaf][0].append("constraint_16_" + str(i) + "_" + str(j) + "_" +str(r))
     
-                        my_columns[leaf][1].append(get_feature_value(r,i))
+                        my_columns[leaf][1].append(big_M)
                         
                         row_value = row_value + 1
                     
@@ -275,7 +277,7 @@ def create_rows_CG(depth,segments_set):
 
                             col_names.append("segment_leaf_"  + str(s) + "_" + str(l)) #x_{l,s}
         
-                            col_values.append(get_feature_value(r,i))
+                            col_values.append(big_M)
             
                 col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
@@ -285,7 +287,7 @@ def create_rows_CG(depth,segments_set):
         
                 row_values.append([col_names,col_values])
         
-                row_right_sides.append(big_M)
+                row_right_sides.append(2*big_M - get_feature_value(r,i))
         
                 row_senses = row_senses + "L"
         
@@ -309,7 +311,7 @@ def create_rows_CG(depth,segments_set):
 
                             col_names.append("segment_leaf_"  + str(s) + "_" + str(l)) #x_{l,s}
         
-                            col_values.append(-get_feature_value(r,i))
+                            col_values.append(big_M)
             
                 col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
@@ -319,7 +321,7 @@ def create_rows_CG(depth,segments_set):
         
                 row_values.append([col_names,col_values])
         
-                row_right_sides.append(big_M)
+                row_right_sides.append(2*big_M + get_feature_value(r,i) - 0.01)
         
                 row_senses = row_senses + "L"
         

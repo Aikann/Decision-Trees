@@ -99,6 +99,8 @@ def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
                 
                 seg[l].append(r)
                 
+    """
+                
     from learn_tree_funcs import get_feature_value, get_num_features
     
     
@@ -123,7 +125,7 @@ def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
                     #print(min([get_feature_value(r2,i) for r2 in seg[l]]),get_feature_value(r,i))
             
                     assert max([get_feature_value(r2,i) for r2 in seg[l]]) == get_feature_value(r,i)
-    
+    """
     return seg
 
 def give_solution_type(prob): #return a string saying if the solution is integral, continuous or infeasible

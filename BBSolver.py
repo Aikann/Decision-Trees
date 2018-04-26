@@ -17,7 +17,7 @@ chosen_method = "DEPTH_FIRST"
 
 def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
-    prob=create_new_master(inputdepth,segments_set)
+    prob=create_new_master2(inputdepth,segments_set)
                 
     root_node=BaP_Node(segments_set,prob,"",[],[],[[hash_seg(segments_set[l][0])] for l in range(len(segments_set))],[]) #construct root node
     

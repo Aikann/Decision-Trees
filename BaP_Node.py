@@ -5,7 +5,7 @@ Created on Tue Apr 10 13:44:53 2018
 @author: Guillaume
 """
 
-from RMPSolver import add_column, solveRMP, display_RMP_solution_dual, display_RMP_solution_primal, RMP_add_f_constraint, add_column2, create_new_master
+from RMPSolver import add_column, solveRMP, display_RMP_solution_dual, display_RMP_solution_primal, RMP_add_f_constraint, add_column2, create_new_master, display_prob_lite
 from nodes_external_management import give_solution_type, check_unicity, adapt_segments_set, hash_seg
 
 from PricingSolver import solve_pricing
@@ -133,9 +133,11 @@ class BaP_Node:
                 
                 #check_unicity(self.segments_set)
                                                                        
-                print(self.segments_set)
+                #print(self.segments_set)
                 
-                print(segments_to_be_added)
+                #print(segments_to_be_added)
+                
+                display_prob_lite(self.prob,"dual")
                 
                 #display_RMP_solution_dual(depth,self.prob,count_iter)
                 
@@ -159,7 +161,7 @@ class BaP_Node:
                 
                 self.add_segments(segments_to_be_added,True)
                                                     
-                self.prob = add_column(depth,self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
+                self.prob = add_column2(depth,self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
                 
             print(count_iter,"Time MP construction :",time.time()-a)
             
