@@ -7,7 +7,7 @@ Created on Tue Apr 17 11:27:19 2018
 
 from learn_tree_funcs import get_data_size
 import random
-import copy
+from copy import deepcopy as dc
 
 """HASH FUNCTIONS"""
 
@@ -123,27 +123,6 @@ def extract_rows_pricing_all_at_once(pricing_prob_all_at_once,num_leafs):
                     #print(min([get_feature_value(r2,i) for r2 in seg[l]]),get_feature_value(r,i))
             
                     assert max([get_feature_value(r2,i) for r2 in seg[l]]) == get_feature_value(r,i)
-                                                                 
-    """
-    c_list = [copy.deepcopy(seg[i]) for i in range(4)]
-    
-    seg[0]=c_list[3]
-    seg[1]=c_list[2]
-    seg[2]=c_list[0]
-    seg[3]=c_list[1]
-    
-    
-    #original=copy.deepcopy(seg)
-    
-    random.shuffle(seg)
-    
-    #for s in seg:
-        
-       # print(original.index(s))
-        
-    #input()
-    """
-    #print("Extract seg",seg)
     
     return seg
 
@@ -169,9 +148,10 @@ def give_solution_type(prob): #return a string saying if the solution is integra
     
 
 
-def adapt_segments_set(segments_set,row,leaf,branching): #TODO ; update hash table. This function adapts the segments_set according to the branching rule
+def adapt_segments_set(segments_set,row,leaf,branching): #This function adapts the segments_set according to the branching rule
     
     new_segments_set=[[] for l in range(len(segments_set))]
+    H=[[] for l in range(len(segments_set))]
     
     if branching==1:
         
@@ -181,11 +161,13 @@ def adapt_segments_set(segments_set,row,leaf,branching): #TODO ; update hash tab
             
                 if l==leaf and row in s:
                     
-                    new_segments_set[l].append(s)
+                    new_segments_set[l].append(dc(s))
+                    H[l].append(hash_seg(s))
                     
                 elif l!=leaf and row not in s:
                     
-                    new_segments_set[l].append(s)
+                    new_segments_set[l].append(dc(s))
+                    H[l].append(hash_seg(s))
                     
     else:
         
@@ -195,10 +177,12 @@ def adapt_segments_set(segments_set,row,leaf,branching): #TODO ; update hash tab
             
                 if l==leaf and row not in s:
                     
-                    new_segments_set[l].append(s)
+                    new_segments_set[l].append(dc(s))
+                    H[l].append(hash_seg(s))
                     
                 elif l!=leaf and row in s:
                     
-                    new_segments_set[l].append(s)    
+                    new_segments_set[l].append(dc(s))   
+                    H[l].append(hash_seg(s))
     
-    return new_segments_set
+    return new_segments_set, H

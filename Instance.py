@@ -10,7 +10,8 @@ from learn_tree_funcs import transform_data, read_file, write_file
 import copy
 from BaP_Node import obtain_depth2
 from nodes_external_management import obtain_depth, init_rand_hash
-from cplex_problems_CG import obtain_TARGETS
+from cplex_problems_master import obtain_TARGETS
+from cplex_problems_master2 import obtain_TARGETS2
 
 def create_instance(inputfile):
     
@@ -44,7 +45,8 @@ def create_complete_tree(segments_set,inputdepth):
         
 def initialize_global_values(TARGETS,inputdepth):
     
-    obtain_TARGETS(TARGETS) #give TARGETS to the cplex_problems_CG module
+    obtain_TARGETS(TARGETS) #give TARGETS to the cplex_problems_master module
+    obtain_TARGETS2(TARGETS) #give TARGETS to the cplex_problems_master2 module
     obtain_depth(inputdepth) #give depth to the nodes_external_management module
     obtain_depth2(inputdepth) #give depth to the BaP_Node module
     init_rand_hash() #initialize the hash table

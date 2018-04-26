@@ -5,12 +5,13 @@ Created on Wed Apr 18 10:12:37 2018
 @author: Guillaume
 """
 
-from RMPSolver import create_new_master, display_RMP_solution_primal
+from RMPSolver import create_new_master, display_RMP_solution_primal, create_new_master2
 from BaP_Node import BaP_Node
 import time
 from nodes_external_management import hash_seg
 import copy
-from learn_tree_funcs import get_num_features
+from learn_tree_funcs import get_num_features, get_data_size
+import matplotlib.pyplot as plt
 
 chosen_method = "DEPTH_FIRST"
 
@@ -18,7 +19,7 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
     prob=create_new_master(inputdepth,segments_set)
                 
-    root_node=BaP_Node(segments_set,prob,"",[],[],[],[[hash_seg(segments_set[l][0])] for l in range(len(segments_set))],[]) #construct root node
+    root_node=BaP_Node(segments_set,prob,"",[],[],[[hash_seg(segments_set[l][0])] for l in range(len(segments_set))],[]) #construct root node
     
     best_node = root_node
     
@@ -40,15 +41,21 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
     else:
         
-        i, j = select_f_to_branch(root_node, inputdepth)
+        #i, j = select_f_to_branch(root_node, inputdepth)
                 
-        root_node.create_children_by_branching_on_f(i,j) #TODO ;
+        #root_node.create_children_by_branching_on_f(i,j)
+        
+        r, l = select_row_leaf_to_branch(root_node, inputdepth)
+                
+        root_node.create_children_by_branching_on_row(r,l)
         
         #return root_node
     
     queue = ["0", "1"]
     
     while queue != []: #TODO ; update LB
+        
+        plt.close()
         
         current_node = get_node(queue[0],root_node)
         
@@ -70,9 +77,13 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
                 
             elif current_node.solution_value < best_solution_value:
                                 
-                i, j = select_f_to_branch(current_node,inputdepth)
+                #i, j = select_f_to_branch(current_node,inputdepth)
                                                 
-                current_node.create_children_by_branching_on_f(i,j) #TODO ;
+                #current_node.create_children_by_branching_on_f(i,j)
+                
+                r, l = select_row_leaf_to_branch(current_node, inputdepth)
+                
+                current_node.create_children_by_branching_on_row(r,l)
                 
                 ID = current_node.ID
                 
@@ -149,3 +160,21 @@ def select_f_to_branch(node,depth): # TO DO ; proprely
             if (i,j) not in node.branched_f:
                 
                 return i, j
+            
+def select_row_leaf_to_branch(node,depth):
+    
+    data_size=get_data_size()
+    
+    num_leafs = 2**depth
+        
+    for r in range(data_size):
+        
+        for l in range(num_leafs):
+            
+            if (r,l) not in node.branched_rows:
+                
+                return r, l
+            
+            
+            
+            

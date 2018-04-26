@@ -5,12 +5,17 @@ Created on Wed Apr 18 10:25:53 2018
 @author: Guillaume
 """
 
-from cplex_problems_CG import construct_master_problem, add_variable_to_master_and_rebuild, add_f_constraint
+from cplex_problems_master import construct_master_problem, add_variable_to_master_and_rebuild, add_f_constraint
+from cplex_problems_master2 import construct_master_problem2, add_variable_to_master_and_rebuild2
 from learn_tree_funcs import get_num_features,get_left_leafs,get_right_leafs,get_data_size, get_num_targets
 
 def create_new_master(inputdepth,segments_set):
     
     return construct_master_problem(inputdepth,segments_set)
+
+def create_new_master2(inputdepth,segments_set):
+    
+    return construct_master_problem2(inputdepth,segments_set)
 
 def solveRMP(prob):
     
@@ -19,6 +24,10 @@ def solveRMP(prob):
 def add_column(depth,prob,inputdepth,segments_set,segment_to_add,leaf):
     
     return add_variable_to_master_and_rebuild(depth,prob,inputdepth,segments_set,segment_to_add,leaf)
+
+def add_column2(depth,prob,inputdepth,segments_set,segment_to_add,leaf):
+    
+    return add_variable_to_master_and_rebuild2(depth,prob,inputdepth,segments_set,segment_to_add,leaf)
 
 def RMP_add_f_constraint(prob,i,j,right_side):
     
@@ -62,7 +71,7 @@ def display_RMP_solution_dual(depth,prob,CGiter):
         
     for l in range(num_leafs): #constraint (18),
         
-         print("Be_"+str(l)+"*= "+"%.2f" % round(prob.solution.get_dual_values("constraint_18_"+str(l)),2))
+         print("Be_"+str(l)+"*= "+"%.2f" % round(-prob.solution.get_dual_values("constraint_18_"+str(l)),2))
          
     for r in range(data_size): #constraint (19),
         
