@@ -10,7 +10,6 @@ import getopt
 import sys
 from Instance import create_instance, create_first_solution, create_complete_tree, initialize_global_values
 
-
 def main(argv):
     
     global TARGETS
@@ -42,7 +41,7 @@ def main(argv):
     initialize_global_values(TARGETS,inputdepth)
         
     print(segments_set)
-    
+        
     return BBSolver(TARGETS, segments_set, best_solution_value, inputdepth)
     
-root=main(["-firis.csv","-d 1"])
+root=main(["-fweak_test.csv","-d 1"])

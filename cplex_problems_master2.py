@@ -5,15 +5,15 @@ Created on Wed Apr 25 10:05:32 2018
 @author: Guillaume
 """
 
-from learn_tree_funcs import get_num_targets, get_left_leafs, get_right_leafs
-from learn_tree_funcs import get_num_features, get_data_size, get_min_value, get_max_value, get_feature_value, get_target
+from learn_tree_funcs import get_num_targets, get_left_leafs, get_right_leafs, get_left_node, get_right_node, get_depth, get_path
+from learn_tree_funcs import get_num_features, get_data_size, get_min_value, get_max_value, get_feature_value, get_target, get_max_value_f, get_min_value_f
 import cplex
 
 def obtain_TARGETS2(t):
     global TARGETS
     TARGETS=t
 
-def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
+def add_variable_to_master_and_rebuild2(depth,prob,prev_segments_set,segments_to_add):
     
     num_features = get_num_features()
     
@@ -26,12 +26,16 @@ def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,
     value=prob.variables.get_num()
     
     var_types, var_lb, var_ub, var_obj, var_names = "", [], [], [], []
-    
-    big_M = get_max_value() - get_min_value()
-    
+        
     my_columns = [[[],[]] for leaf in range(num_leafs)]
     
     for leaf in range(num_leafs):
+        
+        s=segments_to_add[leaf]
+        
+        #if s==[]:
+            
+           # continue
     
         var_types += "C"
     
@@ -47,9 +51,7 @@ def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,
         
         row_value=0
         
-        s=segments_to_add[leaf]
-        
-        for i in range(num_features): #constraint (15)
+        for i in range(num_features): #constraint (2)
             
             for r in range(data_size):
 
@@ -57,13 +59,13 @@ def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,
                     
                     if leaf in get_left_leafs(j, num_nodes) and r in s:
 
-                        my_columns[leaf][0].append("constraint_15_" + str(i) + "_" + str(j) + "_" +str(r))
+                        my_columns[leaf][0].append("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
     
-                        my_columns[leaf][1].append(big_M)
+                        my_columns[leaf][1].append(get_feature_value(r,i))
                         
                         row_value = row_value + 1
                     
-        for i in range(num_features): #constraint (16)
+        for i in range(num_features): #constraint (3)
             
             for r in range(data_size):
 
@@ -71,43 +73,41 @@ def add_variable_to_master_and_rebuild2(depth,prob,inputdepth,prev_segments_set,
                     
                     if leaf in get_right_leafs(j, num_nodes) and r in s:
 
-                        my_columns[leaf][0].append("constraint_16_" + str(i) + "_" + str(j) + "_" +str(r))
+                        my_columns[leaf][0].append("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
     
-                        my_columns[leaf][1].append(big_M)
+                        my_columns[leaf][1].append(1)
                         
                         row_value = row_value + 1
                     
-        for r in range(data_size): #constraint (17)
+        for t in range(get_num_targets()): #constraint (4)
             
-            if r in s:
+            for l in range(num_leafs):
                 
-                my_columns[leaf][0].append("constraint_17_" + str(r))
+                if l == leaf:
+                            
+                    my_columns[leaf][0].append("constraint_4_" + str(leaf) + "_" +str(t))
+        
+                    my_columns[leaf][1].append(sum([1 for r in s if get_target(r)!=TARGETS[t]]))
+                        
+                    row_value = row_value + 1
+                    
+        for r in range(data_size): #constraint (5)
+                                                        
+            if r in s:
+        
+                my_columns[leaf][0].append("constraint_5_" + str(r))
 
                 my_columns[leaf][1].append(1)
-                
-            row_value = row_value + 1
             
-        for l in range(num_leafs): #constraint (18)
+                row_value = row_value + 1
+            
+        for l in range(num_leafs): #constraint (6)
             
             if l==leaf:
                 
-                my_columns[leaf][0].append("constraint_18_" + str(l))
+                my_columns[leaf][0].append("constraint_6_" + str(l))
 
                 my_columns[leaf][1].append(1)
-                
-            row_value = row_value + 1
-            
-        for r in range(data_size): #constraint (19)
-        
-            for l in range(num_leafs):
-                                
-                if l == leaf:
-                    
-                    if r in s:
-                
-                        my_columns[leaf][0].append("constraint_19_" + str(r) + "_" +str(l))
-
-                        my_columns[leaf][1].append(1)
                 
                 row_value = row_value + 1
                                     
@@ -139,8 +139,6 @@ def create_variables_CG(depth,segments_set):
 
     num_features = get_num_features()
 
-    data_size = get_data_size()
-
     num_leafs = 2**depth
 
     num_nodes = num_leafs-1
@@ -171,9 +169,9 @@ def create_variables_CG(depth,segments_set):
 
         var_types = var_types + "C"
 
-        var_lb.append(get_min_value())
+        var_lb.append(0-0.01)
 
-        var_ub.append(get_max_value())
+        var_ub.append(1+0.01)
 
         var_obj.append(0)
 
@@ -197,17 +195,17 @@ def create_variables_CG(depth,segments_set):
 
             var_value = var_value + 1
             
-    # row error, variables to minimize. On the paper: e_{r}
+    # leaf error, variables to minimize. On the paper: e_{l}
 
-    for r in range(data_size):
+    for l in range(num_leafs):
 
-        var_names.append("row_error_" + str(r))
+        var_names.append("leaf_error_" + str(l))
 
         var_types = var_types + "C"
 
         var_lb.append(0)
 
-        var_ub.append(1)
+        var_ub.append(cplex.infinity)
 
         var_obj.append(1)
 
@@ -256,80 +254,122 @@ def create_rows_CG(depth,segments_set):
     num_leafs = 2**depth
 
     num_nodes = num_leafs-1
-        
-    big_M = get_max_value() - get_min_value()
-    
+            
     constraint_indicators.append(row_value)
     
-    for i in range(num_features): #constraint (15), indicator 0
+    for i in range(num_features): #constraint (2), indicator 0
 
         for j in range(num_nodes):
             
             for r in range(data_size):
                 
                 col_names, col_values = [], []
-                
-                for l in get_left_leafs(j,num_nodes):
-                    
-                    for s in range(len(segments_set[l])):
-                        
-                        if r in segments_set[l][s]:
-
-                            col_names.append("segment_leaf_"  + str(s) + "_" + str(l)) #x_{l,s}
-        
-                            col_values.append(big_M)
             
+                for l in get_left_leafs(j, num_nodes):
+    
+                    col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]]) #x_{l,s}
+    
+                    col_values.extend([get_feature_value(r,i) for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+    
                 col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
-                col_values.extend([big_M, -1])
-    
-                row_names.append("constraint_15_" + str(i) + "_" + str(j) + "_" +str(r))
+                col_values.extend([1, -1])
+
+                row_names.append("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
         
                 row_values.append([col_names,col_values])
         
-                row_right_sides.append(2*big_M - get_feature_value(r,i))
+                row_right_sides.append(1)
         
                 row_senses = row_senses + "L"
         
                 row_value = row_value + 1
-                    
+                
     constraint_indicators.append(row_value)
             
-    for i in range(num_features): #constraint (16), indicator 1
+    for i in range(num_features): #constraint (3), indicator 1
 
         for j in range(num_nodes):
             
             for r in range(data_size):
                 
                 col_names, col_values = [], []
-                
-                for l in get_right_leafs(j,num_nodes):
-                    
-                    for s in range(len(segments_set[l])):
-                        
-                        if r in segments_set[l][s]:
-
-                            col_names.append("segment_leaf_"  + str(s) + "_" + str(l)) #x_{l,s}
-        
-                            col_values.append(big_M)
             
+                for l in get_right_leafs(j, num_nodes):
+    
+                    col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]]) #x_{l,s}
+    
+                    col_values.extend([get_feature_value(r,i) for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+    
                 col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
-                col_values.extend([big_M, 1])
-    
-                row_names.append("constraint_16_" + str(i) + "_" + str(j) + "_" +str(r))
+                col_values.extend([1, 1])
+
+                row_names.append("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
         
                 row_values.append([col_names,col_values])
         
-                row_right_sides.append(2*big_M + get_feature_value(r,i) - 0.01)
+                row_right_sides.append(get_feature_value(r,i) + 2 - 0.01)
         
                 row_senses = row_senses + "L"
         
                 row_value = row_value + 1
-                
+                                
     constraint_indicators.append(row_value)
+    
+    #compute r_t
+    
+    r_t = [0 for t in range(get_num_targets())]
+    
+    for r in range(data_size):
+        
+        for t in range(get_num_targets()):
+            
+            if TARGETS[t] != get_target(r):
+        
+                r_t[t] += 1
+            
+    for l in range(num_leafs): #constraint (4), indicator 2
+        
+        for t in range(get_num_targets()):
+            
+            col_names, col_values = [], []
+            
+            for s in range(len(segments_set[l])):
+                            
+                col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l)]) #x_{l,s}
                 
-    for r in range(data_size): #constraint (17), indicator 2
+                s_t = 0
+                
+                for r in segments_set[l][s]:
+                    
+                    if TARGETS[t] != get_target(r):
+                        
+                        s_t += 1
+                
+                col_values.extend([s_t])
+                                                    
+            col_names.extend(["prediction_type_" + str(t) + "_" + str(l)])
+
+            col_values.extend([r_t[t]])
+
+            col_names.extend(["leaf_error_" + str(l)])
+
+            col_values.extend([-1])
+            
+            row_names.append("constraint_4_" + str(l) + "_" +str(t))
+        
+            row_values.append([col_names,col_values])
+    
+            row_right_sides.append(r_t[t])
+    
+            row_senses = row_senses + "L"
+    
+            row_value = row_value + 1
+            
+    constraint_indicators.append(row_value)
+    
+    for r in range(data_size): #constraint (5), indicator 3
         
         col_names, col_values = [], []
         
@@ -343,7 +383,7 @@ def create_rows_CG(depth,segments_set):
                     
                     col_values.extend([1])
                     
-        row_names.append("constraint_17_" + str(r))
+        row_names.append("constraint_5_" + str(r))
                 
         row_values.append([col_names,col_values])
 
@@ -354,14 +394,14 @@ def create_rows_CG(depth,segments_set):
         row_value = row_value + 1
         
     constraint_indicators.append(row_value)
-        
-    for l in range(num_leafs): #constraint (18), indicator 3
+            
+    for l in range(num_leafs): #constraint (6), indicator 4
         
         col_names = ["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l]))] #x_{l,s}
         
         col_values = [1 for s in range(len(segments_set[l]))] #x_{l,s}
         
-        row_names.append("constraint_18_" + str(l))
+        row_names.append("constraint_6_" + str(l))
         
         row_values.append([col_names,col_values])
 
@@ -370,54 +410,16 @@ def create_rows_CG(depth,segments_set):
         row_senses = row_senses + "E"
 
         row_value = row_value + 1
-        
-    constraint_indicators.append(row_value)
-        
-    for r in range(data_size): #constraint (19), indicator 4
-        
-        for l in range(num_leafs):
-            
-            col_names, col_values = [], []
-            
-            for s in range(len(segments_set[l])):
-                
-                if r in segments_set[l][s]:
-            
-                    col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l)]) #x_{l,s}
-                    
-                    col_values.extend([1])
-                    
-            for t in range(get_num_targets()):
-                
-                if TARGETS[t] != get_target(r):
-
-                    col_names.extend(["prediction_type_" + str(t) + "_" + str(l)])
-
-                    col_values.extend([1])
-
-            col_names.extend(["row_error_" + str(r)])
-
-            col_values.extend([-1])
-            
-            row_names.append("constraint_19_" + str(r) + "_" +str(l))
-        
-            row_values.append([col_names,col_values])
-    
-            row_right_sides.append(1)
-    
-            row_senses = row_senses + "L"
-    
-            row_value = row_value + 1
-            
+                                
     constraint_indicators.append(row_value)
             
-    for l in range(num_leafs): #constraint (20), indicator 5
+    for l in range(num_leafs): #constraint (8), indicator 5
 
         col_names = ["prediction_type_" + str(s) + "_" + str(l) for s in range(get_num_targets())]
 
-        col_values = [1 for s in range(get_num_targets())]
+        col_values = [1 for t in range(get_num_targets())]
 
-        row_names.append("constraint_20_"+str(l))
+        row_names.append("constraint_8_"+str(l))
 
         row_values.append([col_names,col_values])
 
@@ -429,13 +431,13 @@ def create_rows_CG(depth,segments_set):
         
     constraint_indicators.append(row_value)
 
-    for j in range(num_nodes): #constraint (21), indicator 6
+    for j in range(num_nodes): #constraint (9), indicator 6
 
         col_names = ["node_feature_" + str(j) + "_" + str(i) for i in range(num_features)]
 
         col_values = [1 for i in range(num_features)]
 
-        row_names.append("constraint_21_"+str(j))
+        row_names.append("constraint_9_"+str(j))
 
         row_values.append([col_names,col_values])
 
@@ -444,6 +446,8 @@ def create_rows_CG(depth,segments_set):
         row_senses = row_senses + "E"
 
         row_value = row_value + 1
+        
+    constraint_indicators.append(row_value)
                 
     return row_names, row_values, row_right_sides, row_senses
 
@@ -470,5 +474,6 @@ def construct_master_problem2(depth,segments_set):
     prob.set_error_stream(None)
     prob.set_warning_stream(None)
     prob.set_results_stream(None)
+    
     
     return prob

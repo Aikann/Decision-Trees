@@ -5,40 +5,39 @@ Created on Wed Apr 25 09:58:57 2018
 @author: Guillaume
 """
 
-from learn_tree_funcs import get_left_leafs, get_right_leafs
-from learn_tree_funcs import get_num_features, get_data_size, get_feature_value, get_max_value, get_min_value
+from learn_tree_funcs import get_left_leafs, get_right_leafs, get_num_targets, get_data_size, get_target, get_path, get_num_features
 import cplex
+
+def obtain_TARGETS3(t):
+    global TARGETS
+    TARGETS=t
 
 def compute_C(depth,r,l,master_prob):
     
-    num_features = get_num_features()
-
     num_leafs = 2**depth
 
     num_nodes = num_leafs-1
+            
+    C = master_prob.solution.get_dual_values("constraint_5_" + str(r)) #theta
     
-    big_M = get_max_value() - get_min_value()
-    
-    C=0
-    
-    for i in range(num_features):
+    for i in range(get_num_features()):
     
         for j in range(num_nodes):
             
             if l in get_left_leafs(j,num_nodes):
-                
-                C = C + abs(master_prob.solution.get_dual_values("constraint_15_" + str(i) + "_" + str(j) + "_" +str(r)))
+            
+                C = C + master_prob.solution.get_dual_values("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
                 
             elif l in get_right_leafs(j,num_nodes):
                 
-                C = C + abs(master_prob.solution.get_dual_values("constraint_16_" + str(i) + "_" + str(j) + "_" +str(r)))
+                C = C + master_prob.solution.get_dual_values("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
+                                                            
+    for t in range(get_num_targets()):
+        
+        if TARGETS[t] != get_target(r):
+        
+            C = C + master_prob.solution.get_dual_values("constraint_4_" + str(l) + "_" +str(t)) # gamma
                 
-    C = -big_M*C
-    
-    C = C + master_prob.solution.get_dual_values("constraint_17_" + str(r))
-    
-    C = C - abs(master_prob.solution.get_dual_values("constraint_19_" + str(r) + "_" +str(l)))
-    
     return C
 
 def create_variables_pricing(depth,master_prob,leaf):
@@ -88,6 +87,54 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
 
     row_senses = ""
     
+    data_size=get_data_size()
+    
+    # constraint to prevent the generated segment from being emtpty
+    
+    col_names = ["row_"+str(r) for r in range(data_size)]
+    
+    col_values = [-1 for r in range(data_size)]
+    
+    row_names.append("constraint_entire_set")
+
+    row_values.append([col_names,col_values])
+
+    row_right_sides.append(-1)
+
+    row_senses = row_senses + "L"
+
+    row_value = row_value + 1
+    
+    # constraint to prevent the pricing from giving existing segments as output
+    
+    for s in range(len(existing_segments)):
+        
+        col_names, col_values = [], []
+        
+        for r in range(data_size):
+            
+            if r in existing_segments[s]:
+        
+                col_names.extend(["row_"+str(r)])
+        
+                col_values.extend([1])
+                
+            else:
+                
+                col_names.extend(["row_"+str(r)])
+        
+                col_values.extend([-1])               
+                    
+        row_names.append("constraint_segment_"+str(s))
+    
+        row_values.append([col_names,col_values])
+    
+        row_right_sides.append(len(existing_segments[s]) - 1)
+    
+        row_senses = row_senses + "L"
+    
+        row_value = row_value + 1
+    
     #branching constraint (0)
     
     if len(exc_rows) > 0:
@@ -112,15 +159,15 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
     
         col_names = ["row_"  + str(r) for r in incl_rows]
         
-        col_values = [1 for r in exc_rows]
+        col_values = [-1 for r in incl_rows]
         
         row_names.append("constraint_branching_1")
     
         row_values.append([col_names,col_values])
     
-        row_right_sides.append(len(incl_rows))
+        row_right_sides.append(-len(incl_rows))
     
-        row_senses = row_senses + "R"
+        row_senses = row_senses + "L"
     
         row_value = row_value + 1
         
@@ -157,7 +204,7 @@ def construct_pricing_problem2(depth,master_prob,exc_rows,incl_rows,leaf,existin
     #prob.parameters.mip.strategy.probe.set(3)
 
     #prob.parameters.preprocessing.presolve.set(1)
-                    
+    
     prob.set_log_stream(None)
     prob.set_error_stream(None)
     prob.set_warning_stream(None)

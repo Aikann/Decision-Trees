@@ -44,6 +44,37 @@ def add_f_constraint(prob,i,j,right_side):
     
     return new_prob
 
+def add_p_constraint(prob,l,t,right_side):
+            
+    new_prob = cplex.Cplex()
+    
+    prob.write("tmp.lp",'lp')
+    
+    new_prob.read("tmp.lp",'lp')
+    
+    col_names = ["prediction_type_"+str(t)+"_"+str(l)]
+
+    col_values = [1]
+
+    row_names=["branch_p_" + str(t) + "_" + str(l)]
+
+    row_values=[[col_names,col_values]]
+
+    row_right_sides = [right_side]
+
+    row_senses = "E"
+    
+    new_prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
+    
+    new_prob.set_problem_type(0) #tell cplex this is a LP, not a MILP
+    
+    new_prob.set_log_stream(None)
+    new_prob.set_error_stream(None)
+    new_prob.set_warning_stream(None)
+    new_prob.set_results_stream(None)
+    
+    return new_prob
+
 def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
     
     num_features = get_num_features()

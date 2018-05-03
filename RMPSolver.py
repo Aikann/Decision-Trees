@@ -5,7 +5,7 @@ Created on Wed Apr 18 10:25:53 2018
 @author: Guillaume
 """
 
-from cplex_problems_master import construct_master_problem, add_variable_to_master_and_rebuild, add_f_constraint
+from cplex_problems_master import construct_master_problem, add_variable_to_master_and_rebuild, add_f_constraint, add_p_constraint
 from cplex_problems_master2 import construct_master_problem2, add_variable_to_master_and_rebuild2
 from learn_tree_funcs import get_num_features,get_left_leafs,get_right_leafs,get_data_size, get_num_targets
 
@@ -25,13 +25,17 @@ def add_column(depth,prob,inputdepth,segments_set,segment_to_add,leaf):
     
     return add_variable_to_master_and_rebuild(depth,prob,inputdepth,segments_set,segment_to_add,leaf)
 
-def add_column2(depth,prob,inputdepth,segments_set,segment_to_add,leaf):
+def add_column2(depth,prob,segments_set,segment_to_add):
     
-    return add_variable_to_master_and_rebuild2(depth,prob,inputdepth,segments_set,segment_to_add,leaf)
+    return add_variable_to_master_and_rebuild2(depth,prob,segments_set,segment_to_add)
 
 def RMP_add_f_constraint(prob,i,j,right_side):
     
     return add_f_constraint(prob,i,j,right_side)
+
+def RMP_add_p_constraint(prob,l,t,right_side):
+    
+    return add_p_constraint(prob,l,t,right_side)
 
 def display_RMP_solution_dual(depth,prob,CGiter):
         

@@ -5,7 +5,7 @@ Created on Tue Apr 10 13:44:53 2018
 @author: Guillaume
 """
 
-from RMPSolver import add_column, solveRMP, display_RMP_solution_dual, display_RMP_solution_primal, RMP_add_f_constraint, add_column2, create_new_master, display_prob_lite
+from RMPSolver import add_column, solveRMP, display_RMP_solution_dual, RMP_add_p_constraint, display_RMP_solution_primal, RMP_add_f_constraint, add_column2, create_new_master, display_prob_lite, create_new_master2
 from nodes_external_management import give_solution_type, check_unicity, adapt_segments_set, hash_seg
 
 from PricingSolver import solve_pricing
@@ -22,15 +22,15 @@ def obtain_depth2(d):
 
 class BaP_Node:
     
-    def __init__(self,segments_set,prob,ID,parent,branched_rows,H,branched_f):
+    def __init__(self,segments_set,prob,ID,parent,H,branch_var,branch_index):
         
         self.prob=prob #cplex problem
         self.segments_set=segments_set #list containing lists of sets for each leaf
         self.ID = ID
         self.parent = parent
-        self.branched_rows = branched_rows #list of branched rows
         self.H = H #hash table for segments
-        self.branched_f = branched_f
+        self.branch_var = branch_var #type of branched variables
+        self.branch_index = branch_index #index of the variables
         
     def explore(self): #do CG until the master problem is solved
         
@@ -41,9 +41,9 @@ class BaP_Node:
         #print(self.segments_set)
                 
         convergence = False
-        
+                
         solveRMP(self.prob)
-                        
+                                
         if give_solution_type(self.prob) == 'infeasible':
             
             self.solution_type = 'infeasible'
@@ -64,17 +64,9 @@ class BaP_Node:
         red_cost = float('-inf')
         
         while not convergence:
-            """
-            if count_iter==2:
-                
-                print(self.segments_set)
             
-                del self.segments_set[0][0]
-                
-                self.prob = create_new_master(depth, self.segments_set)
-            """
             c=time.time()
-                        
+                                    
             solveRMP(self.prob)
             
             #display_RMP_solution_primal(depth,self.prob,count_iter,self.segments_set)
@@ -109,15 +101,15 @@ class BaP_Node:
                     
                 """
                     
-                pricing_method = 3
+                pricing_method = 1
                     
             #previous_solution = self.prob.solution.get_objective_value()
             
             b=time.time()
                         
             segments_to_be_added, convergence, red_cost = solve_pricing(depth,
-            self.prob,self.segments_set,self.branched_rows,
-            self.branched_f,self.ID,pricing_method)
+            self.prob,self.segments_set,self.branch_var,
+            self.branch_index,self.ID,pricing_method)
             
             print(count_iter,"Time pricing :",time.time()-b)
             
@@ -125,7 +117,7 @@ class BaP_Node:
             
             plt.pause(0.01)
             
-            if count_iter%1==0:
+            if count_iter%10==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
@@ -135,34 +127,38 @@ class BaP_Node:
                                                                        
                 #print(self.segments_set)
                 
-                #print(segments_to_be_added)
+                print(segments_to_be_added)
                 
-                display_prob_lite(self.prob,"dual")
+                #display_prob_lite(self.prob,"primal")
+                
+                #print(self.prob.solution.get_reduced_costs())
+                
+                #for i in self.prob.variables.get_names():
+                
+                 #   print(i,self.prob.solution.get_reduced_costs(i))
                 
                 #display_RMP_solution_dual(depth,self.prob,count_iter)
                 
                 #display_RMP_solution_primal(depth,self.prob,count_iter,self.segments_set)
                 
-                input()
-                                
-                time.sleep(0.1)
-                
+                #input()
+                                                
             a=time.time()
+            
+            prev_seg = dc(self.segments_set)
             
             #print("Full set",self.segments_set)
             
             #print("seg to be added",segments_to_be_added)
-            
-            previous_seg_set = dc(self.segments_set)
-            
+                        
             #print("Full set after addition",self.segments_set)
                         
             if not convergence:
-                
+                                                
                 self.add_segments(segments_to_be_added,True)
-                                                    
-                self.prob = add_column2(depth,self.prob,depth,previous_seg_set,segments_to_be_added,self.segments_set)
                 
+                self.prob = add_column2(depth,self.prob,prev_seg,segments_to_be_added)
+                                                                    
             print(count_iter,"Time MP construction :",time.time()-a)
             
             
@@ -188,7 +184,7 @@ class BaP_Node:
         return
         
     def add_segments(self,segs_to_add,safe_insertion=False):
-                
+                        
         for l in range(len(self.segments_set)):
             
             if segs_to_add[l]!=[]:
@@ -211,45 +207,93 @@ class BaP_Node:
                 
         child1_prob = RMP_add_f_constraint(self.prob,i,j,1)
                 
-        child1_branch_f = dc(self.branched_f)
+        child1_branch_var, child1_branch_index = dc(self.branch_var), dc(self.branch_index)
         
-        child1_branch_f.append((i,j))
+        child1_branch_var.append('f')
         
-        self.child1 = BaP_Node(dc(self.segments_set),child1_prob,self.ID+"1",self,dc(self.branched_rows),dc(self.H),child1_branch_f)
+        child1_branch_index.append((i,j))
+        
+        self.child1 = BaP_Node(dc(self.segments_set),child1_prob,self.ID+"1",self,dc(self.H),child1_branch_var,child1_branch_index)
                 
         child0_prob = RMP_add_f_constraint(self.prob,i,j,0)
         
-        child0_branch_f = dc(self.branched_f)
+        child0_branch_var, child0_branch_index = dc(self.branch_var), dc(self.branch_index)
         
-        child0_branch_f.append((i,j))
+        child0_branch_var.append('f')
         
-        self.child0 = BaP_Node(dc(self.segments_set),child0_prob,self.ID+"0",self,dc(self.branched_rows),dc(self.H),child0_branch_f)
+        child0_branch_index.append((i,j))
+        
+        self.child0 = BaP_Node(dc(self.segments_set),child0_prob,self.ID+"0",self,dc(self.H),child0_branch_var,child0_branch_index)
         
         return
+    
+    def create_children_by_branching_on_p(self,l,t):
+                
+        child1_prob = RMP_add_p_constraint(self.prob,l,t,1)
+                
+        child1_branch_var, child1_branch_index = dc(self.branch_var), dc(self.branch_index)
+        
+        child1_branch_var.append('p')
+        
+        child1_branch_index.append((l,t))
+        
+        self.child1 = BaP_Node(dc(self.segments_set),child1_prob,self.ID+"1",self,dc(self.H),child1_branch_var,child1_branch_index)
+                
+        child0_prob = RMP_add_p_constraint(self.prob,l,t,0)
+        
+        child0_branch_var, child0_branch_index = dc(self.branch_var), dc(self.branch_index)
+        
+        child0_branch_var.append('p')
+        
+        child0_branch_index.append((l,t))
+        
+        self.child0 = BaP_Node(dc(self.segments_set),child0_prob,self.ID+"0",self,dc(self.H),child0_branch_var,child0_branch_index)
+        
+        return
+
     
     def create_children_by_branching_on_row(self,row,leaf):
         
         child1_segments, H1 = adapt_segments_set(self.segments_set,row,leaf,1)
         
-        child1_prob = create_new_master(depth,child1_segments)
+        child1_prob = create_new_master2(depth,child1_segments)
         
-        child1_branched_rows = dc(self.branched_rows)
+        child1_branch_var, child1_branch_index = dc(self.branch_var), dc(self.branch_index)
         
-        child1_branched_rows.append((row,leaf))
+        child1_branch_var.append('row_leaf')
+                
+        child1_branch_index.append((row,leaf))
         
-        self.child1 = BaP_Node(child1_segments,child1_prob,self.ID+"1",self,child1_branched_rows,H1,self.branched_f)
+        self.child1 = BaP_Node(child1_segments,child1_prob,self.ID+"1",self,H1,child1_branch_var,child1_branch_index)
         
         child0_segments, H0 = adapt_segments_set(self.segments_set,row,leaf,0)
         
-        child0_prob = create_new_master(depth,child0_segments)
+        child0_prob = create_new_master2(depth,child0_segments)
+                
+        child0_branch_var, child0_branch_index = dc(self.branch_var), dc(self.branch_index)
         
-        child0_branched_rows = dc(self.branched_rows)
+        child0_branch_var.append('row_leaf')
+                
+        child0_branch_index.append((row,leaf))
         
-        child0_branched_rows.append((row,leaf))
-        
-        self.child0 = BaP_Node(child0_segments,child0_prob,self.ID+"0",self,child0_branched_rows,H0,self.branched_f)
+        self.child0 = BaP_Node(child0_segments,child0_prob,self.ID+"0",self,H0,child0_branch_var,child0_branch_index)
         
         return
+    
+    def create_children_by_branching(self,var,index):
+        
+        if var=='row_leaf':
+            
+            self.create_children_by_branching_on_row(index[0],index[1])
+            
+        elif var=='f':
+            
+            self.create_children_by_branching_on_f(index[0],index[1])
+            
+        elif var=='p':
+            
+            self.create_children_by_branching_on_p(index[0],index[1])
+                
                     
     """ NOT FULLY IMPLEMENTED
             

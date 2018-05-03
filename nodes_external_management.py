@@ -136,9 +136,11 @@ def give_solution_type(prob): #return a string saying if the solution is integra
     
     else:
         
-        for i in prob.solution.get_values():
+        for v in prob.variables.get_names():
             
-            if (float(i) <= round(i) - 0.01) or (float(i) >= round(i) + 0.01):
+            i = prob.solution.get_values(v)
+            
+            if ((float(i) <= round(i) - 0.01) or (float(i) >= round(i) + 0.01)) and "node_constant" not in v :
                 
                 return "continuous"
             
