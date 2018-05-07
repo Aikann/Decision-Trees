@@ -13,12 +13,13 @@ from nodes_external_management import extract_rows_pricing, extract_rows_pricing
 import matplotlib.pyplot as plt
 from random import shuffle
 from learn_tree_funcs import get_data_size, get_num_features, get_feature_value
+from RMPSolver import display_prob_lite
 
 
 
 def solve_pricing_given_leaf(depth,prob,leaf,branch_var,branch_index,ID,existing_segments):#return a tuple (segments, obj_value).
     
-    rows_to_be_excluded, rows_to_be_included = [], []
+    rows_to_be_excluded, rows_to_be_included, segs_excluded = [], [], []
         
     for v in range(len(branch_var)):
         
@@ -35,8 +36,24 @@ def solve_pricing_given_leaf(depth,prob,leaf,branch_var,branch_index,ID,existing
                     rows_to_be_excluded.append(branch_index[v][0])
                 
     #input()
-                    
-    pricing_prob = construct_pricing_problem2(depth,prob,rows_to_be_excluded,rows_to_be_included,leaf,existing_segments)
+    
+    for s in range(len(existing_segments)):
+        
+        if float(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(leaf))) >= 0.01 or float(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(leaf))) <= -0.01:
+            
+            segs_excluded.append(existing_segments[s])
+            
+            #print('Segment '+str(s)+' forbidden, red_cost = '+str(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(leaf))))
+            
+            #print(existing_segments[s])
+            
+        else:
+            
+            m=0
+            
+            #print('Not excluded',existing_segments[s],float(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(leaf))))
+                        
+    pricing_prob = construct_pricing_problem2(depth,prob,rows_to_be_excluded,rows_to_be_included,leaf,segs_excluded)
                 
     pricing_prob.solve()
     
@@ -61,39 +78,57 @@ def solve_pricing_given_leaf(depth,prob,leaf,branch_var,branch_index,ID,existing
 
 
 
-def solve_pricing_all_at_once(depth,prob,branched_rows,branched_f,ID,segments_set):
+def solve_pricing_all_at_once(depth,prob,branch_var,branch_index,ID,existing_segments):
     
-    pricing_prob_all_at_once = contruct_pricing_problem_all_at_once2(depth,prob,branched_rows,branched_f,ID,segments_set)
+    rows_to_be_excluded, rows_to_be_included, segs_excluded = [[] for l in range(len(existing_segments))], [[] for l in range(len(existing_segments))], [[] for l in range(len(existing_segments))]
         
-    pricing_prob_all_at_once.solve()
-            
-    obj_value = pricing_prob_all_at_once.solution.get_objective_value()
-            
-    """
-    
-    v=0
-    
-    for l in range(2**depth):
+    for v in range(len(branch_var)):
         
-        for r in range(get_data_size()):
+        if branch_var[v] == 'row_leaf':
+        
+            leaf = branch_index[v][1]
+                
+            if ID[v] == '1':
+                
+                rows_to_be_included[leaf].append(branch_index[v][0])
+                
+            else:
+                
+                rows_to_be_excluded[leaf].append(branch_index[v][0])
+                
+    #input()
     
-            print(r,l,pricing_prob_all_at_once.solution.get_values()[v],pricing_prob_all_at_once.objective.get_linear()[v])
+    for l in range(len(existing_segments)):
+    
+        for s in range(len(existing_segments[l])):
             
-            v=v+1
+            if float(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(l))) >= 0.01 or float(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(l))) <= -0.01:
+                
+                segs_excluded[l].append(existing_segments[l][s])
+                
+                #print('Segment '+str(s)+' forbidden, red_cost = '+str(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(leaf))))
     
-    print("OBJ VALUE ",obj_value)
+    try:
     
-    """
-    
-    obj_value = obj_value + sum([prob.solution.get_dual_values("constraint_18_"+str(leaf)) for leaf in range(len(segments_set))])
-    
-    #obj_value = obj_value + sum([prob.solution.get_dual_values("branch_f_"+str(i)+"_"+str(j)) for (i,j) in branched_f])
+        pricing_prob_all_at_once = contruct_pricing_problem_all_at_once2(depth,prob,rows_to_be_excluded,rows_to_be_included,segs_excluded)
             
-    #print("SUM BHETA ",sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))]))
-            
-    segment = extract_rows_pricing_all_at_once(pricing_prob_all_at_once,len(segments_set))
-    
-    #display_pricing_all_at_once(depth,pricing_prob_all_at_once)
+        pricing_prob_all_at_once.solve()
+                
+        obj_value = pricing_prob_all_at_once.solution.get_objective_value()
+        
+        #print('obj',obj_value)
+        
+        obj_value = obj_value + sum([prob.solution.get_dual_values("constraint_6_"+str(l)) for l in range(len(existing_segments))])
+                    
+        #print("SUM BHETA ",sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))]))
+                
+        segment = extract_rows_pricing_all_at_once(pricing_prob_all_at_once,len(existing_segments))
+        
+        #display_pricing_all_at_once(depth,pricing_prob_all_at_once)
+        
+    except:
+        
+        segment, obj_value = [[] for l in range(len(existing_segments))], float('inf')
         
     return segment, obj_value
 
@@ -127,6 +162,8 @@ def solve_pricing(depth,prob,segments_set,branch_var,branch_index,ID,pricing_met
                         
             print("Reduced cost for leaf "+str(l)+" :",str(value))
             
+            print(segments)
+            
     elif pricing_method==2:
                 
         excl_rows, remember_order = [], []
@@ -141,7 +178,7 @@ def solve_pricing(depth,prob,segments_set,branch_var,branch_index,ID,pricing_met
             
             if l!=num_leafs-1:
                 
-                segment, value = solve_pricing_given_leaf(depth,prob,true_l,branched_rows,ID,segments_set[true_l],excl_rows)
+                segment, value = solve_pricing_given_leaf(depth,prob,l,branch_var,branch_index,ID,segments_set[l])
             
                 segments_to_be_added.append(segment) 
                 
@@ -186,8 +223,30 @@ def solve_pricing(depth,prob,segments_set,branch_var,branch_index,ID,pricing_met
         #print(prob.solution.get_dual_values(),segments)
                     
         print("Reduced cost for partition : ",str(value))
+        
+    elif pricing_method==4:
+        
+        l = 1
+                
+        segments, value = solve_pricing_given_leaf(depth,prob,l,branch_var,branch_index,ID,segments_set[l])
+        
+        segments_to_be_added_ordered.append(segments)
+        
+        obj_values.append(value)
+        
+        if value > -200:
+        
+            plt.scatter(count_iter,value,color=color_leaf(l))
+        
+            plt.pause(0.01)
+                    
+        print("Reduced cost for leaf "+str(l)+" :",str(value))
+        
+        segments_to_be_added_ordered.append([])
+        
+        print(segments)
                                 
-    return segments_to_be_added_ordered, ((min(obj_values) > -0.01) and (pricing_method==1)), min(obj_values)
+    return segments_to_be_added_ordered, ((min(obj_values) > -0.01) and (pricing_method>=1)), min(obj_values)
 
 def display_pricing_all_at_once(depth,prob):
     

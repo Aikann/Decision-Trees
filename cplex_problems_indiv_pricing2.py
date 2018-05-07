@@ -31,12 +31,14 @@ def compute_C(depth,r,l,master_prob):
             elif l in get_right_leafs(j,num_nodes):
                 
                 C = C + master_prob.solution.get_dual_values("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
-                                                            
+                                                           
     for t in range(get_num_targets()):
         
         if TARGETS[t] != get_target(r):
         
-            C = C + master_prob.solution.get_dual_values("constraint_4_" + str(l) + "_" +str(t)) # gamma
+            C = C + master_prob.solution.get_dual_values("constraint_4_" + str(l) + "_" +str(t)) # gamma leaf
+            
+    C = C + master_prob.solution.get_dual_values("constraint_4bis_" + str(r) + "_" +str(l)) # gamma row
                 
     return C
 

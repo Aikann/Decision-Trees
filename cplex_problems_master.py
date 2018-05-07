@@ -75,7 +75,7 @@ def add_p_constraint(prob,l,t,right_side):
     
     return new_prob
 
-def add_variable_to_master_and_rebuild(depth,prob,inputdepth,prev_segments_set,segments_to_add,segments_set):
+def add_variable_to_master_and_rebuild(depth,prob,prev_segments_set,segments_to_add,segments_set):
     
     num_features = get_num_features()
     

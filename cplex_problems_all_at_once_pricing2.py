@@ -5,40 +5,43 @@ Created on Wed Apr 25 09:58:57 2018
 @author: Guillaume
 """
 
-from learn_tree_funcs import get_left_leafs, get_right_leafs
+from learn_tree_funcs import get_left_leafs, get_right_leafs, get_num_targets, get_target
 from learn_tree_funcs import get_num_features, get_data_size, get_feature_value, get_max_value, get_min_value
 import cplex
 
+
+def obtain_TARGETS4(t):
+    global TARGETS
+    TARGETS=t
+
 def compute_C(depth,r,l,master_prob):
     
-    num_features = get_num_features()
-
     num_leafs = 2**depth
 
     num_nodes = num_leafs-1
+            
+    C = master_prob.solution.get_dual_values("constraint_5_" + str(r)) #theta
     
-    big_M = get_max_value() - get_min_value()
-    
-    C=0
-    
-    for i in range(num_features):
+    for i in range(get_num_features()):
     
         for j in range(num_nodes):
             
             if l in get_left_leafs(j,num_nodes):
-                
-                C = C + abs(master_prob.solution.get_dual_values("constraint_15_" + str(i) + "_" + str(j) + "_" +str(r)))
+            
+                C = C + master_prob.solution.get_dual_values("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
                 
             elif l in get_right_leafs(j,num_nodes):
                 
-                C = C + abs(master_prob.solution.get_dual_values("constraint_16_" + str(i) + "_" + str(j) + "_" +str(r)))
+                C = C + master_prob.solution.get_dual_values("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
+                                                            
+    for t in range(get_num_targets()):
+        
+        if TARGETS[t] != get_target(r):
+        
+            C = C + master_prob.solution.get_dual_values("constraint_4_" + str(l) + "_" +str(t)) # gamma leaf
+            
+    C = C + master_prob.solution.get_dual_values("constraint_4bis_" + str(r) + "_" +str(l)) # gamma row
                 
-    C = -big_M*C
-    
-    C = C + master_prob.solution.get_dual_values("constraint_17_" + str(r))
-    
-    C = C - abs(master_prob.solution.get_dual_values("constraint_19_" + str(r) + "_" +str(l)))
-    
     return C
 
 def create_variables_pricing_all_at_once(depth,master_prob):
@@ -80,7 +83,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
     return var_names, var_types, var_lb, var_ub, var_obj
             
             
-def create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_segments):
+def create_rows_pricing_all_at_once(depth,exc_rows,incl_rows,existing_segments):
     
     row_value = 0
 
@@ -95,6 +98,24 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_s
     data_size = get_data_size()
     
     num_leafs = 2**depth
+    
+    # at least one row per leaf constraint
+    
+    for l in range(num_leafs):
+        
+        col_names = ["row_" + str(l) + "_" + str(r) for r in range(data_size)]
+        
+        col_values = [-1 for r in range(data_size)]
+        
+        row_names.append("constraint_atleastonerow_"+str(l))
+    
+        row_values.append([col_names,col_values])
+
+        row_right_sides.append(-1)
+
+        row_senses = row_senses + "L"
+
+        row_value = row_value + 1
     
     #partition constraint
     
@@ -114,36 +135,80 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_s
 
         row_value = row_value + 1
     
-    #branching constraints
+    # constraint to prevent the pricing from giving existing segments as output
     
-    for k in range(len(branched_rows)):
-        
-        r, l = branched_rows[k][0], branched_rows[k][1]
-        
-        col_names = ["row_" + str(l) + "_" + str(r)]
-        
-        col_values = [1]
-        
-        row_names.append("constraint_branching_row"+str(r)+"_"+str(l))
+    for l in range(num_leafs):
     
-        row_values.append([col_names,col_values])
+        for s in range(len(existing_segments[l])):
+            
+            col_names, col_values = [], []
+            
+            for r in range(data_size):
+                
+                if r in existing_segments[l][s]:
+            
+                    col_names.extend(["row_"+str(l)+"_"+str(r)])
+            
+                    col_values.extend([1])
+                    
+                else:
+                    
+                    col_names.extend(["row_"+str(l)+"_"+str(r)])
+            
+                    col_values.extend([-1])               
+                        
+            row_names.append("constraint_segment_"+str(s)+"_"+str(l))
         
-        if ID[k]=="0":
-    
+            row_values.append([col_names,col_values])
+        
+            row_right_sides.append(len(existing_segments[l][s]) - 1)
+        
+            row_senses = row_senses + "L"
+        
+            row_value = row_value + 1
+            
+    for l in range(num_leafs):
+            
+        #branching constraint (0)
+        
+        if len(exc_rows[l]) > 0:
+            
+            col_names = ["row_"+str(l)+"_"+str(r) for r in exc_rows[l]]
+            
+            col_values = [1 for r in exc_rows[l]]
+            
+            row_names.append("constraint_branching_0_leaf"+str(l))
+        
+            row_values.append([col_names,col_values])
+        
             row_right_sides.append(0)
+        
+            row_senses = row_senses + "L"
+        
+            row_value = row_value + 1
+        
+        #branching constraint (1)
+        
+        if len(incl_rows[l]) > 0:
+        
+            col_names = ["row_"+str(l)+"_"+str(r) for r in incl_rows[l]]
             
-        else:
+            col_values = [-1 for r in incl_rows[l]]
             
-            row_right_sides.append(1)
-    
-        row_senses = row_senses + "E"
-    
-        row_value = row_value + 1
+            row_names.append("constraint_branching_1_leaf"+str(l))
+        
+            row_values.append([col_names,col_values])
+        
+            row_right_sides.append(-len(incl_rows[l]))
+        
+            row_senses = row_senses + "L"
+        
+            row_value = row_value + 1
         
     return row_names, row_values, row_right_sides, row_senses
     
 
-def contruct_pricing_problem_all_at_once2(depth,master_prob,branched_rows,branched_f,ID,existing_segments):
+def contruct_pricing_problem_all_at_once2(depth,master_prob,exc_rows,incl_rows,existing_segments):
     
     global TARGETS
     
@@ -155,7 +220,7 @@ def contruct_pricing_problem_all_at_once2(depth,master_prob,branched_rows,branch
                     
     prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, names = var_names)
     
-    row_names, row_values, row_right_sides, row_senses = create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_segments)
+    row_names, row_values, row_right_sides, row_senses = create_rows_pricing_all_at_once(depth,exc_rows,incl_rows,existing_segments)
     
     prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
     

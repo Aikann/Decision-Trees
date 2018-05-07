@@ -81,7 +81,7 @@ def extract_rows_pricing(pricing_prob): #return the segment given by the pricing
     
     for r in range(get_data_size()):
         
-        if sol[r] == 1:
+        if 0.99 <= sol[r] <= 1.001:
             
             seg.append(r)
     

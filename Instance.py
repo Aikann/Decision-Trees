@@ -13,6 +13,7 @@ from nodes_external_management import obtain_depth, init_rand_hash
 from cplex_problems_master import obtain_TARGETS
 from cplex_problems_master2 import obtain_TARGETS2
 from cplex_problems_indiv_pricing2 import obtain_TARGETS3
+from cplex_problems_all_at_once_pricing2 import obtain_TARGETS4
 
 def create_instance(inputfile):
     
@@ -52,6 +53,7 @@ def initialize_global_values(TARGETS,inputdepth):
     obtain_TARGETS(TARGETS) #give TARGETS to the cplex_problems_master module
     obtain_TARGETS2(TARGETS) #give TARGETS to the cplex_problems_master2 module
     obtain_TARGETS3(TARGETS)
+    obtain_TARGETS4(TARGETS)
     obtain_depth(inputdepth) #give depth to the nodes_external_management module
     obtain_depth2(inputdepth) #give depth to the BaP_Node module
     init_rand_hash() #initialize the hash table

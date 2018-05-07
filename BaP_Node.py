@@ -77,7 +77,7 @@ class BaP_Node:
             
             #print(self.prob.solution.get_values())
                                     
-            if red_cost >= -0.01:
+            if red_cost >= -0.01:# or (count_iter-1)%50==0:
                 
                 pricing_method=1
                 
@@ -101,7 +101,7 @@ class BaP_Node:
                     
                 """
                     
-                pricing_method = 1
+                pricing_method = 3
                     
             #previous_solution = self.prob.solution.get_objective_value()
             
@@ -117,7 +117,7 @@ class BaP_Node:
             
             plt.pause(0.01)
             
-            if count_iter%10==0:
+            if count_iter%300==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
@@ -129,7 +129,7 @@ class BaP_Node:
                 
                 print(segments_to_be_added)
                 
-                #display_prob_lite(self.prob,"primal")
+                display_prob_lite(self.prob,"dual")
                 
                 #print(self.prob.solution.get_reduced_costs())
                 
@@ -141,7 +141,9 @@ class BaP_Node:
                 
                 #display_RMP_solution_primal(depth,self.prob,count_iter,self.segments_set)
                 
-                #input()
+                #print(self.prob.variables.get_num())
+                
+                input()
                                                 
             a=time.time()
             
@@ -157,7 +159,15 @@ class BaP_Node:
                                                 
                 self.add_segments(segments_to_be_added,True)
                 
-                self.prob = add_column2(depth,self.prob,prev_seg,segments_to_be_added)
+                #print(segments_to_be_added)
+                
+                #display_prob_lite(self.prob,"primal")
+                                
+                for l in range(len(segments_to_be_added)):
+                    
+                    if segments_to_be_added[l] != []:
+                                                
+                        self.prob = add_column2(depth,self.prob,prev_seg[l],segments_to_be_added[l],l)
                                                                     
             print(count_iter,"Time MP construction :",time.time()-a)
             
@@ -196,6 +206,16 @@ class BaP_Node:
                         self.segments_set[l].append(segs_to_add[l])
                                                 
                         self.H[l].append(hash_seg(segs_to_add[l]))
+                        
+                    else:
+                        
+                        #if l==1:
+                        
+                          #  print(segs_to_add[l])
+                            
+                           # input("Existing segment")
+                        
+                        segs_to_add[l] = []
                             
                 else:
                         

@@ -76,7 +76,7 @@ def create_variables_pricing(depth,master_prob,leaf):
         A_i_l.append(-s)
 
 
-    print("SUM DUALS :",A_i_l," ",B_i_l)
+    #print("SUM DUALS :",A_i_l," ",B_i_l)
     # z_{r}, main decision variables
 
     for r in range(data_size):
@@ -91,7 +91,7 @@ def create_variables_pricing(depth,master_prob,leaf):
         
         #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
         
-        var_obj.append(-master_prob.solution.get_dual_values("constraint_17_"+str(r)) - master_prob.solution.get_dual_values("constraint_19_"+str(r)+"_"+str(leaf)))
+        var_obj.append(master_prob.solution.get_dual_values("constraint_17_"+str(r)) + master_prob.solution.get_dual_values("constraint_19_"+str(r)+"_"+str(leaf)))
 
         var_value = var_value + 1
         
@@ -292,16 +292,16 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
     row_value = row_value + 1
         
     
-    """
+    
     # constraints to prevent the pricing from generating existing segments
        
     for s in existing_segments:
-        
+                
         col_names, col_values = [], []
         
         for r in range(data_size):
             
-            col_names.extend([VARS2["row_" + str(r)]])
+            col_names.extend(["row_" + str(r)])
                         
             if r in s:
                 
@@ -311,7 +311,7 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
                 
                 col_values.extend([-1])
                 
-        row_names.append("#" + str(row_value))
+        row_names.append("constraint_segment_"+str(s))
 
         row_values.append([col_names,col_values])
 
@@ -320,7 +320,7 @@ def create_rows_pricing(depth,exc_rows,incl_rows,existing_segments):
         row_senses = row_senses + "L"
 
         row_value = row_value + 1
-    """
+
     
         
     #branching constraint (0)

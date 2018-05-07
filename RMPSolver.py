@@ -21,13 +21,13 @@ def solveRMP(prob):
     
     prob.solve()
     
-def add_column(depth,prob,inputdepth,segments_set,segment_to_add,leaf):
+def add_column(depth,prob,segments_set,segment_to_add,leaf):
     
-    return add_variable_to_master_and_rebuild(depth,prob,inputdepth,segments_set,segment_to_add,leaf)
+    return add_variable_to_master_and_rebuild(depth,prob,segments_set,segment_to_add,leaf)
 
-def add_column2(depth,prob,segments_set,segment_to_add):
+def add_column2(depth,prob,segments_set,segment_to_add,leaf):
     
-    return add_variable_to_master_and_rebuild2(depth,prob,segments_set,segment_to_add)
+    return add_variable_to_master_and_rebuild2(depth,prob,segments_set,segment_to_add,leaf)
 
 def RMP_add_f_constraint(prob,i,j,right_side):
     

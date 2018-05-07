@@ -9,11 +9,10 @@ from RMPSolver import create_new_master, display_RMP_solution_primal, create_new
 from BaP_Node import BaP_Node
 import time
 from nodes_external_management import hash_seg
-import copy
 from learn_tree_funcs import get_num_features, get_data_size, get_num_targets
 import matplotlib.pyplot as plt
 
-chosen_method = "DEPTH_FIRST"
+chosen_method = "DEPTH_FIRST_1"
 
 def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
@@ -30,6 +29,8 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     root_node=BaP_Node(segments_set,prob,"",None,H,[],[]) #construct root node
     
     best_ID = 'Solution provided by warm start'
+    
+    best_solution_value = 3000
     
     a=time.time()
     
@@ -57,6 +58,8 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
     queue = ["0", "1"]
     
+    arrange_queue(queue,chosen_method)
+    
     while queue != []: #TODO ; update LB
         
         plt.close()
@@ -65,9 +68,11 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
         
         print("Solving at ID: ",queue[0])
         
+        #input()
+        
         print("Branching on "+str(queue[0][-1])+" : "+str(var)+" "+str(index))
                 
-        print(current_node.segments_set)
+        #print(current_node.segments_set)
         
         #input()
         
@@ -79,7 +84,7 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
                 
         if sol_type != 'infeasible':
             
-            print(display_prob_lite(current_node.prob,"primal"))
+            #print(display_prob_lite(current_node.prob,"primal"))
                         
             if sol_type == 'integer':
                 
@@ -137,20 +142,45 @@ def update_UB(best_value,current_node,prev_ID):
     
     else:
         
-        return prev_ID, val
+        return prev_ID, best_value
     
-def arrange_queue(queue,chosen_method):
+def arrange_queue(queue,chosen_method): #in place, return None
     
     if chosen_method == "HORIZONTAL_SEARCH":
         
         return
     
-    elif chosen_method == "DEPTH_FIRST":
+    elif chosen_method == "DEPTH_FIRST_0":
         
         queue.sort()
         
         return
         
+    elif chosen_method == "DEPTH_FIRST_1":
+        
+        for q in range(len(queue)):
+            
+            queue[q] = invert_ID(queue[q])
+            
+        queue.sort()
+        
+        for q in range(len(queue)):
+            
+            queue[q] = invert_ID(queue[q])
+            
+        return
+       
+def invert_ID(ID):    
+    
+    new_ID=""
+    
+    for i in ID:
+                    
+        new_ID = new_ID + str(1-int(i))
+        
+    return new_ID
+            
+    
 def select_var_to_branch(node,depth): # TO DO ; proprely
     
     data_size = get_data_size()
@@ -178,7 +208,7 @@ def select_var_to_branch(node,depth): # TO DO ; proprely
                 return 'f', (i, j)
             
     input("CAREFUL, THIS PART IS NOT CORRECT, MASTER WILL BE RE-BUILT")
-            
+    
     for r in range(data_size):
         
         for l in range(num_leafs):
@@ -186,6 +216,7 @@ def select_var_to_branch(node,depth): # TO DO ; proprely
             if not already_branch(node,'row_leaf',(r,l)):
                 
                 return 'row_leaf', (r, l)
+
             
             
     
