@@ -5,9 +5,12 @@ Created on Wed Apr 25 10:05:32 2018
 @author: Guillaume
 """
 
-from learn_tree_funcs import get_num_targets, get_left_leafs, get_right_leafs, get_left_node, get_right_node, get_depth, get_path
+from learn_tree_funcs import get_num_targets, get_left_leafs, get_right_leafs, get_left_node, get_right_node, get_depth, get_path, get_pathn
 from learn_tree_funcs import get_num_features, get_data_size, get_min_value, get_max_value, get_feature_value, get_target, get_max_value_f, get_min_value_f
 import cplex
+
+DEPTH_CONSTRAINTS = 0
+eps = 1e-5
 
 def obtain_TARGETS2(t):
     global TARGETS
@@ -35,7 +38,7 @@ def add_variable_to_master_and_rebuild2(depth,prob,prev_segments_set,segments_to
 
     var_lb.append(0)
 
-    var_ub.append(1)
+    var_ub.append(1.5)
 
     var_obj.append(0)
     
@@ -45,34 +48,60 @@ def add_variable_to_master_and_rebuild2(depth,prob,prev_segments_set,segments_to
     
     row_value=0
     
-    for i in range(num_features): #constraint (2)
-        
-        for r in range(data_size):
-
-            for j in range(num_nodes):
-                
-                if leaf in get_left_leafs(j, num_nodes) and r in s:
-
-                    my_columns[0][0].append("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
-
-                    my_columns[0][1].append(get_feature_value(r,i))
+    if not DEPTH_CONSTRAINTS:
+    
+        for i in range(num_features): #constraint (2)
+            
+            for r in range(data_size):
+    
+                for j in range(num_nodes):
                     
-                    row_value = row_value + 1
-                
-    for i in range(num_features): #constraint (3)
-        
-        for r in range(data_size):
-
-            for j in range(num_nodes):
-                
-                if leaf in get_right_leafs(j, num_nodes) and r in s:
-
-                    my_columns[0][0].append("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
-
-                    my_columns[0][1].append(1)
+                    if leaf in get_left_leafs(j, num_nodes) and r in s:
+    
+                        my_columns[0][0].append("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
+    
+                        my_columns[0][1].append(get_feature_value(r,i))
+                        
+                        row_value = row_value + 1
                     
-                    row_value = row_value + 1
+        for i in range(num_features): #constraint (3)
+            
+            for r in range(data_size):
+    
+                for j in range(num_nodes):
+                    
+                    if leaf in get_right_leafs(j, num_nodes) and r in s:
+    
+                        my_columns[0][0].append("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
+    
+                        my_columns[0][1].append(1)
+                        
+                        row_value = row_value + 1
+                        
+    else:
+        
+        for r in range(data_size): #constraints (depth leaf) and (depth node)
+            
+            if r in s:
                 
+                my_columns[0][0].append("constraint_depth_leaf_" + str(leaf) + "_" +str(r))
+                
+                my_columns[0][1].append(depth)
+                        
+                row_value = row_value + 1
+                
+                for j in range(num_nodes):
+                    
+                    if get_depth(j,num_nodes) != 1:
+                    
+                        if leaf in get_right_leafs(j,num_nodes)+get_left_leafs(j,num_nodes):
+                    
+                            my_columns[0][0].append("constraint_depth_node_" + str(j) + "_" +str(r))
+                            
+                            my_columns[0][1].append(get_depth(j,num_nodes)-1)
+                                    
+                            row_value = row_value + 1
+                                    
     for t in range(get_num_targets()): #constraint (4)
         
         for l in range(num_leafs):
@@ -175,9 +204,9 @@ def create_variables_CG(depth,segments_set):
 
         var_types = var_types + "C"
 
-        var_lb.append(0-0.01)
+        var_lb.append(0-eps)
 
-        var_ub.append(1+0.01)
+        var_ub.append(1+eps)
 
         var_obj.append(0)
 
@@ -200,9 +229,7 @@ def create_variables_CG(depth,segments_set):
             var_obj.append(0)
 
             var_value = var_value + 1
-            
-    
-            
+                      
     # leaf error, variables to minimize. On the paper: e_{l}
 
     for l in range(num_leafs):
@@ -215,11 +242,9 @@ def create_variables_CG(depth,segments_set):
 
         var_ub.append(cplex.infinity)
 
-        var_obj.append(0.5)
+        var_obj.append(0)
 
         var_value = var_value + 1
-        
-    
         
     # row error, variables to minimize. On the paper: e_{r}
 
@@ -233,9 +258,27 @@ def create_variables_CG(depth,segments_set):
 
         var_ub.append(cplex.infinity)
 
-        var_obj.append(0.5)
+        var_obj.append(1)
 
         var_value = var_value + 1
+        
+    if DEPTH_CONSTRAINTS: # turn left. On the paper: d_{h,r}
+        
+        for r in range(data_size):
+            
+            for h in range(depth):
+                
+                var_names.append("d_" + str(r) + "_" +str(h))
+
+                var_types = var_types + "C"
+        
+                var_lb.append(0)
+        
+                var_ub.append(1)
+        
+                var_obj.append(0)
+        
+                var_value = var_value + 1
         
     for l in range(num_leafs): # x_{l,s}
     
@@ -247,7 +290,7 @@ def create_variables_CG(depth,segments_set):
 
             var_lb.append(0)
 
-            var_ub.append(1)
+            var_ub.append(1.5)
 
             var_obj.append(0)
 
@@ -280,66 +323,278 @@ def create_rows_CG(depth,segments_set):
     num_leafs = 2**depth
 
     num_nodes = num_leafs-1
-            
-    constraint_indicators.append(row_value)
     
-    for i in range(num_features): #constraint (2), indicator 0
-
-        for j in range(num_nodes):
+    if not DEPTH_CONSTRAINTS:
+                
+        constraint_indicators.append(row_value)
+        
+        for i in range(num_features): #constraint (2), indicator 0
+    
+            for j in range(num_nodes):
+                
+                for r in range(data_size):
+                    
+                    col_names, col_values = [], []
+                
+                    for l in get_left_leafs(j, num_nodes):
+        
+                        col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]]) #x_{l,s}
+        
+                        col_values.extend([get_feature_value(r,i) for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+        
+                    col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
+                    
+                    col_values.extend([1, -1])
+    
+                    row_names.append("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
+            
+                    row_values.append([col_names,col_values])
+            
+                    row_right_sides.append(1)
+            
+                    row_senses = row_senses + "L"
+            
+                    row_value = row_value + 1
+                    
+        constraint_indicators.append(row_value)
+                
+        for i in range(num_features): #constraint (3), indicator 1
+    
+            for j in range(num_nodes):
+                
+                for r in range(data_size):
+                    
+                    col_names, col_values = [], []
+                
+                    for l in get_right_leafs(j, num_nodes):
+        
+                        col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]]) #x_{l,s}
+        
+                        col_values.extend([1 for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+        
+                    col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
+                    
+                    col_values.extend([1, 1])
+    
+                    row_names.append("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
+            
+                    row_values.append([col_names,col_values])
+            
+                    row_right_sides.append(get_feature_value(r,i) + 2 - eps)
+            
+                    row_senses = row_senses + "L"
+            
+                    row_value = row_value + 1
+                    
+    else:
+        
+        for j in range(num_nodes): #constraint (2d)
             
             for r in range(data_size):
                 
                 col_names, col_values = [], []
-            
-                for l in get_left_leafs(j, num_nodes):
-    
-                    col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]]) #x_{l,s}
-    
-                    col_values.extend([get_feature_value(r,i) for s in range(len(segments_set[l])) if r in segments_set[l][s]])
-    
-                col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
-                col_values.extend([1, -1])
-
-                row_names.append("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
-        
+                d_j = get_depth(j, num_nodes) - 1
+                
+                col_names.extend(["d_" + str(r) + "_" +str(d_j)])
+                
+                col_values.extend([1])
+                
+                tmp = get_pathn(j, num_nodes)
+                
+                path_j = [i for i in tmp if (i=='right' or i=='left')]
+                
+                del path_j[0]
+                
+                path_j.reverse()
+                
+                count_right = 0
+                
+                for h in range(len(path_j)):
+                    
+                    if path_j[h]=='left':
+                        
+                        col_names.extend(["d_" + str(r) + "_" +str(h)])
+                        
+                        col_values.extend([-1])
+                        
+                    else:
+                        
+                        col_names.extend(["d_" + str(r) + "_" +str(h)])
+                        
+                        col_values.extend([1])
+                        
+                        count_right += 1
+                        
+                col_names.extend(["node_feature_"+str(j)+"_"+str(i) for i in range(num_features)])
+                
+                col_values.extend([get_feature_value(r,i) for i in range(num_features)])
+                
+                col_names.extend(["node_constant_"+str(j)])
+                
+                col_values.extend([-1])
+                
+                row_names.append("constraint_2d_" + str(j) + "_" +str(r))
+            
                 row_values.append([col_names,col_values])
         
-                row_right_sides.append(1)
+                row_right_sides.append(1 + count_right - d_j)
         
                 row_senses = row_senses + "L"
         
                 row_value = row_value + 1
-                
-    constraint_indicators.append(row_value)
-            
-    for i in range(num_features): #constraint (3), indicator 1
-
-        for j in range(num_nodes):
+                        
+        for j in range(num_nodes): #constraint (3d)
             
             for r in range(data_size):
                 
                 col_names, col_values = [], []
-            
-                for l in get_right_leafs(j, num_nodes):
-    
-                    col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]]) #x_{l,s}
-    
-                    col_values.extend([1 for s in range(len(segments_set[l])) if r in segments_set[l][s]])
-    
-                col_names.extend(["node_feature_" + str(j) + "_" + str(i), "node_constant_" + str(j)])
                 
-                col_values.extend([1, 1])
-
-                row_names.append("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
-        
+                d_j = get_depth(j, num_nodes) - 1
+                
+                col_names.extend(["d_" + str(r) + "_" +str(d_j)])
+                
+                col_values.extend([-1])
+                
+                tmp = get_pathn(j, num_nodes)
+                
+                path_j = [i for i in tmp if (i=='right' or i=='left')]
+                
+                del path_j[0]
+                
+                path_j.reverse()
+                
+                count_right = 0
+                
+                for h in range(len(path_j)):
+                    
+                    if path_j[h]=='left':
+                        
+                        col_names.extend(["d_" + str(r) + "_" +str(h)])
+                        
+                        col_values.extend([-1])
+                        
+                    else:
+                        
+                        col_names.extend(["d_" + str(r) + "_" +str(h)])
+                        
+                        col_values.extend([1])
+                        
+                        count_right += 1
+                        
+                col_names.extend(["node_feature_"+str(j)+"_"+str(i) for i in range(num_features)])
+                
+                col_values.extend([-get_feature_value(r,i) for i in range(num_features)])
+                
+                col_names.extend(["node_constant_"+str(j)])
+                
+                col_values.extend([1])
+                
+                row_names.append("constraint_3d_" + str(j) + "_" +str(r))
+            
                 row_values.append([col_names,col_values])
         
-                row_right_sides.append(get_feature_value(r,i) + 2 - 0.01)
+                row_right_sides.append(-eps + count_right - d_j)
+        
+                row_senses = row_senses + "L"
+        
+                row_value = row_value + 1    
+                
+        for l in range(num_leafs): #constraint (depth_leaf)
+            
+            for r in range(data_size):
+                
+                col_names, col_values = [], []
+                                                                
+                tmp = get_path(l, num_nodes)
+                
+                path_l = [i for i in tmp if (i=='right' or i=='left')]
+                                
+                path_l.reverse()
+                
+                count_right = 0
+                
+                for h in range(len(path_l)):
+                    
+                    if path_l[h]=='left':
+                        
+                        col_names.extend(["d_" + str(r) + "_" +str(h)])
+                        
+                        col_values.extend([-1])
+                        
+                    else:
+                        
+                        col_names.extend(["d_" + str(r) + "_" +str(h)])
+                        
+                        col_values.extend([1])
+                        
+                        count_right += 1
+                        
+                col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+                
+                col_values.extend([depth for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+                                                
+                row_names.append("constraint_depth_leaf_" + str(l) + "_" +str(r))
+            
+                row_values.append([col_names,col_values])
+        
+                row_right_sides.append(count_right)
         
                 row_senses = row_senses + "L"
         
                 row_value = row_value + 1
+   
+        for j in range(num_nodes): #constraint (depth_node)
+            
+            d_j = get_depth(j, num_nodes) - 1
+                                                                
+            tmp = get_pathn(j, num_nodes)
+                
+            path_j = [i for i in tmp if (i=='right' or i=='left')]
+                
+            del path_j[0]
+                
+            path_j.reverse()
+            
+            if len(path_j)>0:
+            
+                for r in range(data_size):
+                    
+                    col_names, col_values = [], []
+                    
+                    count_right = 0
+                    
+                    for h in range(len(path_j)):
+                        
+                        if path_l[h]=='left':
+                            
+                            col_names.extend(["d_" + str(r) + "_" +str(h)])
+                            
+                            col_values.extend([-1])
+                            
+                        else:
+                            
+                            col_names.extend(["d_" + str(r) + "_" +str(h)])
+                            
+                            col_values.extend([1])
+                            
+                            count_right += 1
+                            
+                    for l in get_left_leafs(j,num_nodes)+get_right_leafs(j,num_nodes):
+                            
+                        col_names.extend(["segment_leaf_"  + str(s) + "_" + str(l) for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+                    
+                        col_values.extend([d_j for s in range(len(segments_set[l])) if r in segments_set[l][s]])
+                                                    
+                    row_names.append("constraint_depth_node_" + str(j) + "_" +str(r))
+                
+                    row_values.append([col_names,col_values])
+            
+                    row_right_sides.append(count_right)
+            
+                    row_senses = row_senses + "L"
+            
+                    row_value = row_value + 1             
                                 
     constraint_indicators.append(row_value)
     
@@ -533,7 +788,7 @@ def construct_master_problem2(depth,segments_set):
     prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
             
     prob.set_problem_type(0) #tell cplex this is a LP, not a MILP
-    
+
     prob.set_log_stream(None)
     prob.set_error_stream(None)
     prob.set_warning_stream(None)

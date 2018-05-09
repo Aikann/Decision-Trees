@@ -53,7 +53,7 @@ def solve_pricing_given_leaf(depth,prob,leaf,branch_var,branch_index,ID,existing
             
             #print('Not excluded',existing_segments[s],float(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(leaf))))
                         
-    pricing_prob = construct_pricing_problem2(depth,prob,rows_to_be_excluded,rows_to_be_included,leaf,segs_excluded)
+    pricing_prob = construct_pricing_problem2(depth,prob,rows_to_be_excluded,rows_to_be_included,leaf,[])
                 
     pricing_prob.solve()
     
@@ -71,7 +71,7 @@ def solve_pricing_given_leaf(depth,prob,leaf,branch_var,branch_index,ID,existing
         
     except:
             
-        segment, obj_value = [], float('inf')
+        segment, obj_value = [], float('-inf')
         
     return segment, obj_value
 
@@ -108,27 +108,27 @@ def solve_pricing_all_at_once(depth,prob,branch_var,branch_index,ID,existing_seg
                 
                 #print('Segment '+str(s)+' forbidden, red_cost = '+str(prob.solution.get_reduced_costs("segment_leaf_"+str(s)+"_"+str(leaf))))
     
-    try:
+    #try:
     
-        pricing_prob_all_at_once = contruct_pricing_problem_all_at_once2(depth,prob,rows_to_be_excluded,rows_to_be_included,segs_excluded)
+    pricing_prob_all_at_once = contruct_pricing_problem_all_at_once2(depth,prob,rows_to_be_excluded,rows_to_be_included,segs_excluded)
+        
+    pricing_prob_all_at_once.solve()
             
-        pricing_prob_all_at_once.solve()
+    obj_value = pricing_prob_all_at_once.solution.get_objective_value()
+    
+    #print('obj',obj_value)
+    
+    obj_value = obj_value + sum([prob.solution.get_dual_values("constraint_6_"+str(l)) for l in range(len(existing_segments))])
                 
-        obj_value = pricing_prob_all_at_once.solution.get_objective_value()
+    #print("SUM BHETA ",sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))]))
+            
+    segment = extract_rows_pricing_all_at_once(pricing_prob_all_at_once,len(existing_segments))
+    
+    #display_pricing_all_at_once(depth,pricing_prob_all_at_once)
         
-        #print('obj',obj_value)
+    #except:
         
-        obj_value = obj_value + sum([prob.solution.get_dual_values("constraint_6_"+str(l)) for l in range(len(existing_segments))])
-                    
-        #print("SUM BHETA ",sum([prob.solution.get_dual_values()[constraint_indicators[3] + leaf] for leaf in range(len(segments_set))]))
-                
-        segment = extract_rows_pricing_all_at_once(pricing_prob_all_at_once,len(existing_segments))
-        
-        #display_pricing_all_at_once(depth,pricing_prob_all_at_once)
-        
-    except:
-        
-        segment, obj_value = [[] for l in range(len(existing_segments))], float('inf')
+        #segment, obj_value = [[] for l in range(len(existing_segments))], float('inf')
         
     return segment, obj_value
 
@@ -154,7 +154,7 @@ def solve_pricing(depth,prob,segments_set,branch_var,branch_index,ID,pricing_met
             
             obj_values.append(value)
             
-            if value > -200:
+            if value < 500:
             
                 plt.scatter(count_iter,value,color=color_leaf(l))
             
@@ -162,7 +162,7 @@ def solve_pricing(depth,prob,segments_set,branch_var,branch_index,ID,pricing_met
                         
             print("Reduced cost for leaf "+str(l)+" :",str(value))
             
-            print(segments)
+            #print(segments)
             
     elif pricing_method==2:
                 
@@ -244,9 +244,9 @@ def solve_pricing(depth,prob,segments_set,branch_var,branch_index,ID,pricing_met
         
         segments_to_be_added_ordered.append([])
         
-        print(segments)
+        #print(segments)
                                 
-    return segments_to_be_added_ordered, ((min(obj_values) > -0.01) and (pricing_method>=1)), min(obj_values)
+    return segments_to_be_added_ordered, ((max(obj_values) < 0.01) and (pricing_method==1)), max(obj_values)
 
 def display_pricing_all_at_once(depth,prob):
     

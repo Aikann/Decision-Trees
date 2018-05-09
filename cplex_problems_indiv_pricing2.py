@@ -5,8 +5,10 @@ Created on Wed Apr 25 09:58:57 2018
 @author: Guillaume
 """
 
-from learn_tree_funcs import get_left_leafs, get_right_leafs, get_num_targets, get_data_size, get_target, get_path, get_num_features
+from learn_tree_funcs import get_left_leafs, get_right_leafs, get_num_targets, get_data_size, get_target, get_path, get_num_features, get_depth
 import cplex
+
+DEPTH_CONSTRAINTS = 0
 
 def obtain_TARGETS3(t):
     global TARGETS
@@ -20,17 +22,29 @@ def compute_C(depth,r,l,master_prob):
             
     C = master_prob.solution.get_dual_values("constraint_5_" + str(r)) #theta
     
-    for i in range(get_num_features()):
+    if not DEPTH_CONSTRAINTS:
     
+        for i in range(get_num_features()):
+        
+            for j in range(num_nodes):
+                
+                if l in get_left_leafs(j,num_nodes):
+                
+                    C = C + master_prob.solution.get_dual_values("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
+                    
+                elif l in get_right_leafs(j,num_nodes):
+                    
+                    C = C + master_prob.solution.get_dual_values("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
+                    
+    else:
+        
+        C = C + master_prob.solution.get_dual_values("constraint_depth_leaf_"+str(l)+"_"+str(r))
+        
         for j in range(num_nodes):
             
-            if l in get_left_leafs(j,num_nodes):
+            if get_depth(j,num_nodes) != 1:
             
-                C = C + master_prob.solution.get_dual_values("constraint_2_" + str(i) + "_" + str(j) + "_" +str(r))
-                
-            elif l in get_right_leafs(j,num_nodes):
-                
-                C = C + master_prob.solution.get_dual_values("constraint_3_" + str(i) + "_" + str(j) + "_" +str(r))
+                C = C + master_prob.solution.get_dual_values("constraint_depth_node_"+str(j)+"_"+str(r))
                                                            
     for t in range(get_num_targets()):
         
@@ -182,7 +196,7 @@ def construct_pricing_problem2(depth,master_prob,exc_rows,incl_rows,leaf,existin
     
     prob = cplex.Cplex()
     
-    prob.objective.set_sense(prob.objective.sense.minimize)
+    prob.objective.set_sense(prob.objective.sense.maximize)
 
     var_names, var_types, var_lb, var_ub, var_obj = create_variables_pricing(depth,master_prob,leaf)
                     

@@ -102,7 +102,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
             
             #print(r,leaf,"C_{r,l} ",duals[constraint_indicators[2] + r] + duals[constraint_indicators[4] + r*num_leafs + leaf])
                                                             
-            var_obj.append(-master_prob.solution.get_dual_values("constraint_17_"+str(r)) - master_prob.solution.get_dual_values("constraint_19_"+str(r)+"_"+str(leaf)))
+            var_obj.append(master_prob.solution.get_dual_values("constraint_17_"+str(r)) + master_prob.solution.get_dual_values("constraint_19_"+str(r)+"_"+str(leaf)))
     
             var_value = var_value + 1
         
@@ -150,7 +150,7 @@ def create_variables_pricing_all_at_once(depth,master_prob):
 
 
 
-def create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_segments):
+def create_rows_pricing_all_at_once(depth,exc_rows,incl_rows,existing_segments):
     
     row_value = 0
 
@@ -322,102 +322,45 @@ def create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_s
         row_senses = row_senses + "E"
 
         row_value = row_value + 1
-        
-    if len(branched_f)>0: # branching constraints on f
-        
-        for (i,j) in branched_f:
+    
+    
+    # constraint to prevent the pricing from giving existing segments as output
+    
+    for l in range(num_leafs):
+    
+        for s in range(len(existing_segments[l])):
             
-            print("Hey",i,j)
+            col_names, col_values = [], []
             
-            for l1 in get_left_leafs(j,num_nodes):
+            for r in range(data_size):
                 
-                for l2 in get_right_leafs(j,num_nodes):
-                    
-                    print(l1,l2)
-                    
-                    col_names = ["omega_" + str(l1) + "_" + str(r) + "_" + str(i) for r in range(data_size)]
-                    
-                    col_values = [get_feature_value(r,i) for r in range(data_size)]
-                    
-                    col_names.extend(["kappa_" + str(l2) + "_" + str(r) + "_" + str(i) for r in range(data_size)])
-                    
-                    col_values.extend([-get_feature_value(r,i) for r in range(data_size)])
-                    
-                    row_names.append("constraint_branching_f_"+str(i)+"_"+str(j)+"_"+str(l1)+"_"+str(l2))
-        
-                    row_values.append([col_names,col_values])
-    
-                    row_right_sides.append(0)
-    
-                    row_senses = row_senses + "L"
-    
-                    row_value = row_value + 1
-    
-    
-    """
-    # constraints to prevent the pricing from generating existing segments
-       
-    for s in existing_segments:
-        
-        col_names, col_values = [], []
-        
-        for r in range(data_size):
+                if r in existing_segments[l][s]:
             
-            col_names.extend([VARS2["row_" + str(r)]])
+                    col_names.extend(["row_"+str(l)+"_"+str(r)])
+            
+                    col_values.extend([1])
+                    
+                else:
+                    
+                    col_names.extend(["row_"+str(l)+"_"+str(r)])
+            
+                    col_values.extend([-1])               
                         
-            if r in s:
-                
-                col_values.extend([1])
-                
-            else:
-                
-                col_values.extend([-1])
-                
-        row_names.append("#" + str(row_value))
-
-        row_values.append([col_names,col_values])
-
-        row_right_sides.append(len(s)-1)
-
-        row_senses = row_senses + "L"
-
-        row_value = row_value + 1
+            row_names.append("constraint_segment_"+str(s)+"_"+str(l))
         
-    """
+            row_values.append([col_names,col_values])
         
-    #branching constraints
-    
-    for k in range(len(branched_rows)):
+            row_right_sides.append(len(existing_segments[l][s]) - 1)
         
-        r, l = branched_rows[k][0], branched_rows[k][1]
+            row_senses = row_senses + "L"
         
-        col_names = ["row_" + str(l) + "_" + str(r)]
+            row_value = row_value + 1
         
-        col_values = [1]
-        
-        row_names.append("constraint_branching_row"+str(r)+"_"+str(l))
-    
-        row_values.append([col_names,col_values])
-        
-        if ID[k]=="0":
-    
-            row_right_sides.append(0)
-            
-        else:
-            
-            row_right_sides.append(1)
-    
-        row_senses = row_senses + "E"
-    
-        row_value = row_value + 1
-    
-    
-    
     return row_names, row_values, row_right_sides, row_senses
 
 
 
-def contruct_pricing_problem_all_at_once(depth,master_prob,branched_rows,branched_f,ID,existing_segments):
+def contruct_pricing_problem_all_at_once(depth,master_prob,rows_to_be_excluded,rows_to_be_included,segs_excluded):
     
     global TARGETS
     
@@ -429,7 +372,7 @@ def contruct_pricing_problem_all_at_once(depth,master_prob,branched_rows,branche
             
     prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, names = var_names)
 
-    row_names, row_values, row_right_sides, row_senses = create_rows_pricing_all_at_once(depth,branched_rows,branched_f,ID,existing_segments)
+    row_names, row_values, row_right_sides, row_senses = create_rows_pricing_all_at_once(depth,rows_to_be_excluded,rows_to_be_included,segs_excluded)
     
     prob.linear_constraints.add(lin_expr = row_values, senses = row_senses, rhs = row_right_sides, names = row_names)
     

@@ -75,7 +75,7 @@ def add_p_constraint(prob,l,t,right_side):
     
     return new_prob
 
-def add_variable_to_master_and_rebuild(depth,prob,prev_segments_set,segments_to_add,segments_set):
+def add_variable_to_master_and_rebuild(depth,prob,prev_segments_set,segments_to_add,leaf):
     
     num_features = get_num_features()
     
@@ -89,83 +89,81 @@ def add_variable_to_master_and_rebuild(depth,prob,prev_segments_set,segments_to_
     
     var_types, var_lb, var_ub, var_obj, var_names = "", [], [], [], []
     
-    my_columns = [[[],[]] for leaf in range(num_leafs)]
+    my_columns = [[[],[]]]
     
-    for leaf in range(num_leafs):
+    s=segments_to_add
+        
+    var_types += "C"
+
+    var_lb.append(0)
+
+    var_ub.append(1)
+
+    var_obj.append(0)
     
-        var_types += "C"
+    var_names.append("segment_leaf_" + str(len(prev_segments_set)) + "_" + str(leaf))
     
-        var_lb.append(0)
+    value=value+1
     
-        var_ub.append(1)
+    row_value=0
+        
+    for i in range(num_features): #constraint (15)
+
+        for j in range(num_nodes):
     
-        var_obj.append(0)
-        
-        var_names.append("segment_leaf_" + str(len(prev_segments_set[leaf])) + "_" + str(leaf))
-        
-        value=value+1
-        
-        row_value=0
-        
-        s=segments_to_add[leaf]
-        
-        for i in range(num_features): #constraint (15)
+            for l in get_left_leafs(j, num_nodes):
 
-            for j in range(num_nodes):
-        
-                for l in get_left_leafs(j, num_nodes):
+                my_columns[0][0].append("constraint_15_" + str(i) + "_" + str(j) + "_" +str(l))
 
-                    my_columns[leaf][0].append("constraint_15_" + str(i) + "_" + str(j) + "_" +str(l))
-
-                    my_columns[leaf][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
-                    
-                    row_value = row_value + 1
-                    
-        for i in range(num_features): #constraint (16)
-
-            for j in range(num_nodes):
-        
-                for l in get_right_leafs(j, num_nodes):
-
-                    my_columns[leaf][0].append("constraint_16_" + str(i) + "_" + str(j) + "_" +str(l))
-
-                    my_columns[leaf][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
-                    
-                    row_value = row_value + 1
-                    
-        for r in range(data_size): #constraint (17)
-            
-            if r in s:
-                
-                my_columns[leaf][0].append("constraint_17_" + str(r))
-
-                my_columns[leaf][1].append(1)
-                
-            row_value = row_value + 1
-            
-        for l in range(num_leafs): #constraint (18)
-            
-            if l==leaf:
-                
-                my_columns[leaf][0].append("constraint_18_" + str(l))
-
-                my_columns[leaf][1].append(1)
-                
-            row_value = row_value + 1
-            
-        for r in range(data_size): #constraint (19)
-        
-            for l in range(num_leafs):
-                                
-                if l == leaf:
-                    
-                    if r in s:
-                
-                        my_columns[leaf][0].append("constraint_19_" + str(r) + "_" +str(l))
-
-                        my_columns[leaf][1].append(1)
+                my_columns[0][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
                 
                 row_value = row_value + 1
+                
+    for i in range(num_features): #constraint (16)
+
+        for j in range(num_nodes):
+    
+            for l in get_right_leafs(j, num_nodes):
+
+                my_columns[0][0].append("constraint_16_" + str(i) + "_" + str(j) + "_" +str(l))
+
+                my_columns[0][1].append(max([get_feature_value(r,i) for r in s])) #mu^{i,s} max
+                
+                row_value = row_value + 1
+                
+    for r in range(data_size): #constraint (17)
+        
+        if r in s:
+            
+            my_columns[0][0].append("constraint_17_" + str(r))
+
+            my_columns[0][1].append(1)
+            
+        row_value = row_value + 1
+        
+    for l in range(num_leafs): #constraint (18)
+        
+        if l==leaf:
+            
+            my_columns[0][0].append("constraint_18_" + str(l))
+
+            my_columns[0][1].append(1)
+            
+        row_value = row_value + 1
+        
+    for r in range(data_size): #constraint (19)
+    
+        for l in range(num_leafs):
+                            
+            if l == leaf:
+                
+                if r in s:
+            
+                    my_columns[0][0].append("constraint_19_" + str(r) + "_" +str(l))
+
+                    my_columns[0][1].append(1)
+            
+            row_value = row_value + 1
                                     
     prob.variables.add(obj = var_obj, lb = var_lb, ub = var_ub, types = var_types, columns = my_columns, names = var_names)
 

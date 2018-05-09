@@ -32,7 +32,7 @@ class BaP_Node:
         self.branch_var = branch_var #type of branched variables
         self.branch_index = branch_index #index of the variables
         
-    def explore(self): #do CG until the master problem is solved
+    def explore(self,LB): #do CG until the master problem is solved
         
         plt.figure()
                 
@@ -43,9 +43,11 @@ class BaP_Node:
         convergence = False
                 
         solveRMP(self.prob)
+                        
+        self.prob.write('ici.lp','lp')
                                 
         if give_solution_type(self.prob) == 'infeasible':
-            
+                        
             self.solution_type = 'infeasible'
             self.solution_value = float('+inf')
             
@@ -77,7 +79,7 @@ class BaP_Node:
             
             #print(self.prob.solution.get_values())
                                     
-            if red_cost >= -0.01:# or (count_iter-1)%50==0:
+            if red_cost <= 0.01:# or (count_iter-1)%50==0:
                 
                 pricing_method=1
                 
@@ -101,7 +103,7 @@ class BaP_Node:
                     
                 """
                     
-                pricing_method = 3
+                pricing_method = 1
                     
             #previous_solution = self.prob.solution.get_objective_value()
             
@@ -117,7 +119,15 @@ class BaP_Node:
             
             plt.pause(0.01)
             
-            if count_iter%300==0:
+            if float(self.prob.solution.get_objective_value()) <= LB: #check if it is useful to continue
+                
+                self.solution_value = self.prob.solution.get_objective_value()
+                self.solution = self.prob.solution.get_values()
+                self.solution_type = give_solution_type(self.prob)
+                
+                return
+            
+            if count_iter==0:
             
                 print("Current solution value "+str(self.prob.solution.get_objective_value()))
             
@@ -125,17 +135,19 @@ class BaP_Node:
                 
                 #check_unicity(self.segments_set)
                                                                        
-                #print(self.segments_set)
+                print(self.segments_set)
                 
                 print(segments_to_be_added)
                 
-                display_prob_lite(self.prob,"dual")
+                #display_prob_lite(self.prob,"dual")
+                
+                display_prob_lite(self.prob,"primal")
                 
                 #print(self.prob.solution.get_reduced_costs())
                 
                 #for i in self.prob.variables.get_names():
                 
-                 #   print(i,self.prob.solution.get_reduced_costs(i))
+                    #♦print(i,self.prob.solution.get_reduced_costs(i))
                 
                 #display_RMP_solution_dual(depth,self.prob,count_iter)
                 

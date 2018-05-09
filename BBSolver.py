@@ -12,7 +12,7 @@ from nodes_external_management import hash_seg
 from learn_tree_funcs import get_num_features, get_data_size, get_num_targets
 import matplotlib.pyplot as plt
 
-chosen_method = "DEPTH_FIRST_1"
+chosen_method = "HORIZONTAL_SEARCH"
 
 def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
@@ -30,21 +30,41 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
     best_ID = 'Solution provided by warm start'
     
-    best_solution_value = 3000
+    #best_solution_value = 3000
     
     a=time.time()
     
-    root_node.explore()
+    root_node.explore(0)
     
     print("Full time : ",time.time()-a)
     
     print("Lower bound at root node : ",root_node.prob.solution.get_objective_value())
     
+    LB = root_node.prob.solution.get_objective_value()
+    
+    if round(LB) - 1e-5 <= LB <= round(LB) + 1e-5:
+        
+        LB = int(round(LB))
+        
+    else:
+        
+        LB = int(LB) + 1
+        
+    LB_level = [[] for i in range(3000)]
+    
+    LB_level[0].append(LB)
+    
     #display_RMP_solution_primal(inputdepth,root_node.prob,0,root_node.segments_set)
     
     #return root_node
     
-    if root_node.solution_type == 'integer':
+    if root_node.solution_type == 'integer' or (LB==best_solution_value):
+        
+        print("Best solution: ",best_solution_value)
+    
+        print("Best_ID: ",best_ID)
+    
+        print("Total time :"+str(time.time() - a))
         
         return root_node
     
@@ -60,7 +80,7 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
     
     arrange_queue(queue,chosen_method)
     
-    while queue != []: #TODO ; update LB
+    while queue != []:
         
         plt.close()
         
@@ -76,16 +96,16 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
         
         #input()
         
-        current_node.explore()
+        current_node.explore(LB)
         
         sol_type = current_node.solution_type
         
         print("My ID: "+queue[0]," --- Solution type: ",sol_type," --- Value: ",current_node.solution_value)
                 
         if sol_type != 'infeasible':
-            
-            #print(display_prob_lite(current_node.prob,"primal"))
                         
+            #print(display_prob_lite(current_node.prob,"primal"))
+                                    
             if sol_type == 'integer':
                 
                 best_ID, best_solution_value = update_UB(best_solution_value,current_node,best_ID)
@@ -99,8 +119,24 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
                 ID = current_node.ID
                 
                 queue.extend([ID+"0",ID+"1"])
-        
+                
         del queue[0]
+        
+        LB = update_LB(LB_level,current_node,queue,LB)
+        
+        print('LB_level',LB_level[0:20])
+        
+        print('LB',LB)
+        
+        print('queue',queue)
+        
+        if len(current_node.ID) < len(queue[0]):
+        
+            input()
+                
+        if LB==best_solution_value: #check optimality
+            
+            queue=[]
         
         arrange_queue(queue,chosen_method)
         
@@ -128,6 +164,33 @@ def get_node(ID,root_node):
             node = node.child1
     
     return node
+
+
+def update_LB(LB_level,current_node,queue,LB):
+    
+    level = len(current_node.ID)
+    
+    LB_level[level].append(current_node.solution_value)
+    
+    queue.sort(key=lambda x:len(x))
+    
+    if queue==[] or len(queue[0]) > level:
+                
+        new_LB = min(LB_level[level])
+        
+        if round(new_LB) - 1e-5 <= new_LB <= round(new_LB) + 1e-5:
+        
+            new_LB = int(round(new_LB))
+        
+        else:
+        
+            new_LB = int(new_LB) + 1
+        
+        return new_LB
+    
+    else:
+    
+        return LB
         
         
 def update_UB(best_value,current_node,prev_ID):

@@ -16,7 +16,7 @@ import csv
 import math
 import getopt
 import regtrees as tr
-from learn_tree_funcs import get_min_value, get_max_value, sget_right_node, sget_left_node, TARGETS, VARS, get_left_node, get_right_node, get_parent, get_path, get_pathn, get_depth, get_target, get_feature_value, get_min_value, get_max_value, get_num_targets, convert_leaf, get_max_value_f, get_min_value_f, sget_feature, convert_node, sget_node_constant, read_file, transform_data, write_file, set_double_data, get_num_features, get_data_size, get_num_parents, get_feature, get_right_leafs, get_left_leafs
+from learn_tree_funcs import scale_data, get_min_value, get_max_value, sget_right_node, sget_left_node, TARGETS, VARS, get_left_node, get_right_node, get_parent, get_path, get_pathn, get_depth, get_target, get_feature_value, get_min_value, get_max_value, get_num_targets, convert_leaf, get_max_value_f, get_min_value_f, sget_feature, convert_node, sget_node_constant, read_file, transform_data, write_file, set_double_data, get_num_features, get_data_size, get_num_parents, get_feature, get_right_leafs, get_left_leafs
 
 """
 def get_depth(node,inputdepth): #get the depth of an internal node
@@ -26,6 +26,8 @@ def get_depth(node,inputdepth): #get the depth of an internal node
             return inputdepth-1-i
     raise ValueError('Function get_depth did not return any value')
 """
+
+eps=1e-5
 
 def get_start_solutions(depth):
 
@@ -357,7 +359,7 @@ def create_rows(depth):
 
             row_values.append([col_names,col_values])
             
-            row_right_sides.append(2*big_M -0.01)
+            row_right_sides.append(2*big_M -eps)
 
             row_senses = row_senses + "L"
 
@@ -1131,7 +1133,7 @@ def main(argv):
 
    read_file(inputfile)
    
-   transform_data()
+   scale_data()
 
    write_file(inputfile+".transformed")
    

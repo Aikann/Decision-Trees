@@ -8,7 +8,7 @@ Created on Tue Apr 10 13:09:31 2018
 from BBSolver import BBSolver
 import getopt
 import sys
-from Instance import create_instance, create_first_solution, create_complete_tree, initialize_global_values
+from Instance import create_instance, create_first_solution, create_complete_tree, initialize_global_values, random_partition
 
 def main(argv):
     
@@ -39,6 +39,10 @@ def main(argv):
     create_complete_tree(segments_set,inputdepth)
     
     initialize_global_values(TARGETS,inputdepth)
+    
+    #segments_set = random_partition(inputdepth)
+    
+    #segments_set = [[[0,1]],[[2,3,4]]]
         
     print(segments_set)
         
