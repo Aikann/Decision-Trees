@@ -9,7 +9,7 @@ from learn_tree_funcs import get_num_targets, get_left_leafs, get_right_leafs, g
 from learn_tree_funcs import get_num_features, get_data_size, get_min_value, get_max_value, get_feature_value, get_target, get_max_value_f, get_min_value_f
 import cplex
 
-DEPTH_CONSTRAINTS = 0
+DEPTH_CONSTRAINTS = 1
 eps = 1e-5
 
 def obtain_TARGETS2(t):

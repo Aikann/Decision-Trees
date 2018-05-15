@@ -103,7 +103,7 @@ class BaP_Node:
                     
                 """
                     
-                pricing_method = 1
+                pricing_method = 3
                     
             #previous_solution = self.prob.solution.get_objective_value()
             
@@ -139,15 +139,15 @@ class BaP_Node:
                 
                 print(segments_to_be_added)
                 
-                #display_prob_lite(self.prob,"dual")
+                display_prob_lite(self.prob,"dual")
                 
                 display_prob_lite(self.prob,"primal")
                 
                 #print(self.prob.solution.get_reduced_costs())
                 
-                #for i in self.prob.variables.get_names():
+                for i in self.prob.variables.get_names():
                 
-                    #♦print(i,self.prob.solution.get_reduced_costs(i))
+                    print(i,self.prob.solution.get_reduced_costs(i))
                 
                 #display_RMP_solution_dual(depth,self.prob,count_iter)
                 

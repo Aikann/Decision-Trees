@@ -27,7 +27,7 @@ def get_depth(node,inputdepth): #get the depth of an internal node
     raise ValueError('Function get_depth did not return any value')
 """
 
-eps=1e-5
+eps=1e-3
 
 def get_start_solutions(depth):
 
@@ -1149,7 +1149,7 @@ def main(argv):
    
    
    
-ws=main(['-firis.csv', '-d 1', '-s 1', '-t 30', '-y 0', '-p 0', '-c 1'])
+ws=main(['-firis.csv', '-d 2', '-s 1', '-t 30', '-y 0', '-p 0', '-c 1'])
 
 def print_solution(sol,depth):
     

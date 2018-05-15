@@ -130,9 +130,9 @@ def BBSolver(TARGETS,segments_set,best_solution_value,inputdepth):
         
         print('queue',queue)
         
-        if len(current_node.ID) < len(queue[0]):
+        #if len(current_node.ID) < len(queue[0]):
         
-            input()
+           # input()
                 
         if LB==best_solution_value: #check optimality
             

@@ -8,7 +8,7 @@ Created on Wed Apr 25 09:58:57 2018
 from learn_tree_funcs import get_left_leafs, get_right_leafs, get_num_targets, get_data_size, get_target, get_path, get_num_features, get_depth
 import cplex
 
-DEPTH_CONSTRAINTS = 0
+DEPTH_CONSTRAINTS = 1
 
 def obtain_TARGETS3(t):
     global TARGETS
